@@ -651,6 +651,7 @@ export function Dashboard({ user }: { user: User }) {
                       onRemove={() => removeAppointment(a.id)}
                       onCostChange={isAdmin ? (v) => updateAppointmentCost(a.id, v) : undefined}
                       onPercentageChange={isAdmin ? (v) => updateAppointmentPercentage(a.id, v) : undefined}
+                      hideFinancial={isSupervisor}
                     />
                   ))}
 
