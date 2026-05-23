@@ -744,7 +744,7 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange,
+  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial,
 }: {
   a: Appointment;
   subtitle?: string;
@@ -754,6 +754,7 @@ function AppointmentRow({
   onCancel?: () => void;
   onCostChange?: (v: number) => void;
   onPercentageChange?: (v: number) => void;
+  hideFinancial?: boolean;
 }) {
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
@@ -771,9 +772,9 @@ function AppointmentRow({
         </div>
         <p className="text-xs text-muted-foreground mt-1" dir="ltr">
           {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
-          {a.cost != null && !onCostChange && <span dir="rtl"> · تكلفة: {Number(a.cost).toFixed(2)}</span>}
-          {!onPercentageChange && <span dir="rtl"> · نسبة: {a.specialist_percentage}%</span>}
-          {share != null && <span dir="rtl"> · نصيب الأخصائي: {share.toFixed(2)}</span>}
+          {!hideFinancial && a.cost != null && !onCostChange && <span dir="rtl"> · تكلفة: {Number(a.cost).toFixed(2)}</span>}
+          {!hideFinancial && !onPercentageChange && <span dir="rtl"> · نسبة: {a.specialist_percentage}%</span>}
+          {!hideFinancial && share != null && <span dir="rtl"> · نصيب الأخصائي: {share.toFixed(2)}</span>}
           {a.notes && <span dir="rtl"> · {a.notes}</span>}
         </p>
       </div>
