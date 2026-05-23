@@ -681,6 +681,15 @@ export function Dashboard({ user }: { user: User }) {
                     </div>
                   </>
                 )}
+                <div className="space-y-2">
+                  <Label>تصنيف الجلسة</Label>
+                  <Select value={aSessionKind} onValueChange={(v) => setASessionKind(v as SessionKind)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SESSION_KINDS.map((k) => <SelectItem key={k} value={k}>{SESSION_KIND_LABEL[k]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2 lg:col-span-2">
                   <Label>رقم WhatsApp للحالة</Label>
                   <Input value={aCaseWhatsapp} onChange={(e) => setACaseWhatsapp(e.target.value)} placeholder="+201234567890" dir="ltr" />
