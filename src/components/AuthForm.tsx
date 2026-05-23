@@ -22,11 +22,12 @@ export function AuthForm() {
     setLoading(true);
     try {
       if (mode === "signup") {
+        if (!whatsapp.trim()) throw new Error("أدخل رقم WhatsApp");
         const { error } = await supabase.auth.signUp({
           email, password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { full_name: fullName },
+            data: { full_name: fullName, whatsapp_number: whatsapp.trim() },
           },
         });
         if (error) throw error;
