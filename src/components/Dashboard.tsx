@@ -12,6 +12,16 @@ import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog, Download } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { AttendanceCard } from "@/components/AttendanceCard";
+import { CasesCard } from "@/components/CasesCard";
+
+type SessionKind = "regular" | "initial_assessment" | "test" | "periodic_assessment";
+const SESSION_KIND_LABEL: Record<SessionKind, string> = {
+  regular: "جلسة عادية",
+  initial_assessment: "تقييم مبدئي",
+  test: "اختبار",
+  periodic_assessment: "تقييم دوري",
+};
+const SESSION_KINDS: SessionKind[] = ["regular", "initial_assessment", "test", "periodic_assessment"];
 
 type Role = "admin" | "supervisor" | "specialist";
 
@@ -46,6 +56,8 @@ type Appointment = {
   status: string;
   started_at: string | null;
   ended_at: string | null;
+  session_kind: SessionKind;
+  case_id: string | null;
 };
 
 type Profile = { id: string; full_name: string };
@@ -109,6 +121,7 @@ export function Dashboard({ user }: { user: User }) {
   const [aPercentage, setAPercentage] = useState(50);
   const [aNotes, setANotes] = useState("");
   const [aCaseWhatsapp, setACaseWhatsapp] = useState("");
+  const [aSessionKind, setASessionKind] = useState<SessionKind>("regular");
   const [aSubmitting, setASubmitting] = useState(false);
 
 
@@ -216,12 +229,13 @@ export function Dashboard({ user }: { user: User }) {
       specialist_percentage: aPercentage,
       notes: aNotes.trim() || null,
       case_whatsapp: aCaseWhatsapp.trim() || null,
+      session_kind: aSessionKind,
       created_by: user.id,
     });
     setASubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تم إضافة الموعد للجدول");
-    setACase(""); setANotes(""); setACost(""); setACaseWhatsapp("");
+    setACase(""); setANotes(""); setACost(""); setACaseWhatsapp(""); setASessionKind("regular");
     loadAll();
   };
 
@@ -667,6 +681,15 @@ export function Dashboard({ user }: { user: User }) {
                     </div>
                   </>
                 )}
+                <div className="space-y-2">
+                  <Label>تصنيف الجلسة</Label>
+                  <Select value={aSessionKind} onValueChange={(v) => setASessionKind(v as SessionKind)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SESSION_KINDS.map((k) => <SelectItem key={k} value={k}>{SESSION_KIND_LABEL[k]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2 lg:col-span-2">
                   <Label>رقم WhatsApp للحالة</Label>
                   <Input value={aCaseWhatsapp} onChange={(e) => setACaseWhatsapp(e.target.value)} placeholder="+201234567890" dir="ltr" />
@@ -753,6 +776,10 @@ export function Dashboard({ user }: { user: User }) {
             </CardContent>
           </Card>
         )}
+
+        {/* Attendance — all roles */}
+        {/* Cases — admin/supervisor manage, specialists see own */}
+        <CasesCard user={user} role={role} specialists={specialists} profilesMap={profilesMap} />
 
         {/* Attendance — all roles */}
         <AttendanceCard user={user} role={role} profilesMap={profilesMap} allRoles={allRoles} />
@@ -869,6 +896,11 @@ function AppointmentRow({
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`font-semibold ${isCancelled ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
           {isCancelled && <span className="text-xs rounded bg-destructive/15 px-2 py-0.5 text-destructive font-semibold">اعتذرت</span>}
+          {a.session_kind && a.session_kind !== "regular" && (
+            <span className="text-xs rounded bg-amber-500/15 px-2 py-0.5 text-amber-700 font-semibold">
+              {a.session_kind === "initial_assessment" ? "تقييم مبدئي" : a.session_kind === "test" ? "اختبار" : "تقييم دوري"}
+            </span>
+          )}
           {startedTxt && !endedTxt && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary font-semibold">جارية</span>}
           {endedTxt && <span className="text-xs rounded bg-emerald-500/15 px-2 py-0.5 text-emerald-600 font-semibold">منتهية</span>}
           {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
