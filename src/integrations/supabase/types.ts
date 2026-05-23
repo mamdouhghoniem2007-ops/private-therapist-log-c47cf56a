@@ -14,7 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          case_name: string
+          cost: number
+          created_at: string
+          duration_minutes: number
+          id: string
+          session_date: string
+          session_time: string
+          specialist_id: string
+          specialist_percentage: number
+        }
+        Insert: {
+          case_name: string
+          cost: number
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          session_date: string
+          session_time: string
+          specialist_id: string
+          specialist_percentage?: number
+        }
+        Update: {
+          case_name?: string
+          cost?: number
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          session_date?: string
+          session_time?: string
+          specialist_id?: string
+          specialist_percentage?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
