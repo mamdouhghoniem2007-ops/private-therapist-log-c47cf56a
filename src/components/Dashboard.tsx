@@ -459,6 +459,17 @@ export function Dashboard({ user }: { user: User }) {
                     </SelectContent>
                   </Select>
                 </div>
+                {aType === TESTS_LABEL && (
+                  <div className="space-y-2 lg:col-span-2">
+                    <Label>نوع الاختبار</Label>
+                    <Select value={aTestType} onValueChange={setATestType}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TEST_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>التاريخ</Label>
                   <Input type="date" required value={aDate} onChange={(e) => setADate(e.target.value)} />
@@ -476,6 +487,23 @@ export function Dashboard({ user }: { user: User }) {
                     </SelectContent>
                   </Select>
                 </div>
+                {isAdmin && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>تكلفة الجلسة (ما يدفعه الطفل)</Label>
+                      <Input type="number" min={0} step="0.01" value={aCost} onChange={(e) => setACost(e.target.value === "" ? "" : +e.target.value)} placeholder="0" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>نسبة الأخصائي</Label>
+                      <Select value={String(aPercentage)} onValueChange={(v) => setAPercentage(+v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {PERCENTAGE_OPTIONS.map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
                 <div className="space-y-2 lg:col-span-3">
                   <Label>ملاحظات (اختياري)</Label>
                   <Input value={aNotes} onChange={(e) => setANotes(e.target.value)} placeholder="..." />
@@ -485,6 +513,7 @@ export function Dashboard({ user }: { user: User }) {
                     {aSubmitting ? "جارٍ الحفظ..." : "إضافة للجدول"}
                   </Button>
                 </div>
+
               </form>
             </CardContent>
           </Card>
