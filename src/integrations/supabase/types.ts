@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           duration_minutes: number
+          ended_at: string | null
           id: string
           notes: string | null
           scheduled_date: string
@@ -29,6 +30,7 @@ export type Database = {
           session_type: string | null
           specialist_id: string
           specialist_percentage: number
+          started_at: string | null
           status: string
           test_type: string | null
         }
@@ -39,6 +41,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           duration_minutes?: number
+          ended_at?: string | null
           id?: string
           notes?: string | null
           scheduled_date: string
@@ -46,6 +49,7 @@ export type Database = {
           session_type?: string | null
           specialist_id: string
           specialist_percentage?: number
+          started_at?: string | null
           status?: string
           test_type?: string | null
         }
@@ -56,6 +60,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           duration_minutes?: number
+          ended_at?: string | null
           id?: string
           notes?: string | null
           scheduled_date?: string
@@ -63,6 +68,7 @@ export type Database = {
           session_type?: string | null
           specialist_id?: string
           specialist_percentage?: number
+          started_at?: string | null
           status?: string
           test_type?: string | null
         }
