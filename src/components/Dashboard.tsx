@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock } from "lucide-react";
+import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog } from "lucide-react";
 import logo from "@/assets/logo.png";
+
+type Role = "admin" | "supervisor" | "specialist";
 
 type Session = {
   id: string;
@@ -34,21 +36,24 @@ type Appointment = {
 };
 
 type Profile = { id: string; full_name: string };
+type RoleRow = { user_id: string; role: Role };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
 const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
 const SESSION_TYPES = ["تخاطب", "تأهيل", "تعديل سلوك", "تنمية مهارات", "صعوبات تعلم", "علاج وظيفي", "تقييم"];
+const ROLE_LABEL: Record<Role, string> = { admin: "مدير", supervisor: "مشرف", specialist: "أخصائي" };
 
 export function Dashboard({ user }: { user: User }) {
   const [profileName, setProfileName] = useState<string>("");
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<Role>("specialist");
   const [roleReady, setRoleReady] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [specialists, setSpecialists] = useState<Profile[]>([]);
   const [profilesMap, setProfilesMap] = useState<Record<string, string>>({});
+  const [allRoles, setAllRoles] = useState<Record<string, Role>>({});
   const [filterDate, setFilterDate] = useState(today());
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +67,7 @@ export function Dashboard({ user }: { user: User }) {
   const [percentage, setPercentage] = useState(50);
   const [submitting, setSubmitting] = useState(false);
 
-  // appointment form (admin)
+  // appointment form (admin / supervisor)
   const [aSpecialist, setASpecialist] = useState<string>("");
   const [aCase, setACase] = useState("");
   const [aDate, setADate] = useState(today());
@@ -72,6 +77,11 @@ export function Dashboard({ user }: { user: User }) {
   const [aNotes, setANotes] = useState("");
   const [aSubmitting, setASubmitting] = useState(false);
 
+  const isAdmin = role === "admin";
+  const isSupervisor = role === "supervisor";
+  const isSpecialist = role === "specialist";
+  const canManageSchedule = isAdmin || isSupervisor;
+
   useEffect(() => {
     (async () => {
       const [{ data: prof }, { data: roles }] = await Promise.all([
@@ -79,7 +89,9 @@ export function Dashboard({ user }: { user: User }) {
         supabase.from("user_roles").select("role").eq("user_id", user.id),
       ]);
       setProfileName(prof?.full_name || user.email || "");
-      setIsAdmin((roles || []).some((r: any) => r.role === "admin"));
+      const list = (roles || []).map((r: any) => r.role as Role);
+      const resolved: Role = list.includes("admin") ? "admin" : list.includes("supervisor") ? "supervisor" : "specialist";
+      setRole(resolved);
       setRoleReady(true);
     })();
   }, [user.id, user.email]);
@@ -90,24 +102,39 @@ export function Dashboard({ user }: { user: User }) {
       supabase.from("sessions").select("*").order("session_date", { ascending: false }).order("session_time", { ascending: false }),
       supabase.from("appointments").select("*").order("scheduled_date", { ascending: false }).order("scheduled_time"),
     ]);
-    if (sessionsRes.error) toast.error(sessionsRes.error.message);
-    else setSessions((sessionsRes.data as Session[]) || []);
+    if (sessionsRes.error && !isSupervisor) toast.error(sessionsRes.error.message);
+    setSessions((sessionsRes.data as Session[]) || []);
     if (apptsRes.error) toast.error(apptsRes.error.message);
     else setAppointments((apptsRes.data as Appointment[]) || []);
 
-    if (isAdmin) {
-      const { data: profs } = await supabase.from("profiles").select("id, full_name");
+    if (canManageSchedule) {
+      const [{ data: profs }, { data: rolesData }] = await Promise.all([
+        supabase.from("profiles").select("id, full_name"),
+        isAdmin ? supabase.from("user_roles").select("user_id, role") : Promise.resolve({ data: [] as RoleRow[] }),
+      ]);
       const list = (profs as Profile[] | null) || [];
-      setSpecialists(list);
       const map: Record<string, string> = {};
       list.forEach((p) => (map[p.id] = p.full_name));
       setProfilesMap(map);
-      if (!aSpecialist && list.length) setASpecialist(list[0].id);
+
+      // Only "specialist" users should be listed in the appointment dropdown
+      const rolesMap: Record<string, Role> = {};
+      ((rolesData as RoleRow[] | null) || []).forEach((r) => {
+        // last one wins; only admin sees this data
+        if (!rolesMap[r.user_id] || r.role === "admin") rolesMap[r.user_id] = r.role;
+      });
+      setAllRoles(rolesMap);
+
+      const specialistsOnly = isAdmin
+        ? list.filter((p) => (rolesMap[p.id] || "specialist") === "specialist")
+        : list.filter((p) => p.id !== user.id); // supervisor: assume non-self; backend RLS doesn't allow them to read roles
+      setSpecialists(specialistsOnly);
+      if (!aSpecialist && specialistsOnly.length) setASpecialist(specialistsOnly[0].id);
     }
     setLoading(false);
   };
 
-  useEffect(() => { if (roleReady) loadAll(); /* eslint-disable-next-line */ }, [roleReady, isAdmin]);
+  useEffect(() => { if (roleReady) loadAll(); /* eslint-disable-next-line */ }, [roleReady, role]);
 
   const addSession = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,12 +207,23 @@ export function Dashboard({ user }: { user: User }) {
     if (error) toast.error(error.message);
   };
 
+  // Admin role management
+  const changeUserRole = async (userId: string, newRole: Role) => {
+    if (userId === user.id) return toast.error("لا يمكنك تغيير دورك بنفسك");
+    const { error: delErr } = await supabase.from("user_roles").delete().eq("user_id", userId);
+    if (delErr) return toast.error(delErr.message);
+    const { error: insErr } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole });
+    if (insErr) return toast.error(insErr.message);
+    setAllRoles((r) => ({ ...r, [userId]: newRole }));
+    toast.success(`تم تعيين الدور: ${ROLE_LABEL[newRole]}`);
+  };
+
   const dayRows = useMemo(() => sessions.filter((s) => s.session_date === filterDate), [sessions, filterDate]);
   const myDayAppointments = useMemo(
     () => appointments.filter((a) => a.specialist_id === user.id && a.scheduled_date === filterDate),
     [appointments, user.id, filterDate],
   );
-  const adminDayAppointments = useMemo(
+  const allDayAppointments = useMemo(
     () => appointments.filter((a) => a.scheduled_date === filterDate),
     [appointments, filterDate],
   );
@@ -212,6 +250,12 @@ export function Dashboard({ user }: { user: User }) {
     return { totalCost, specialistShare, centerShare: totalCost - specialistShare, count: dayRows.length };
   }, [dayRows]);
 
+  const allUsersForRoles = useMemo(() => {
+    return Object.entries(profilesMap)
+      .filter(([id]) => id !== user.id)
+      .map(([id, name]) => ({ id, name, role: (allRoles[id] || "specialist") as Role }));
+  }, [profilesMap, allRoles, user.id]);
+
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-10">
@@ -226,8 +270,8 @@ export function Dashboard({ user }: { user: User }) {
           <div className="flex items-center gap-3">
             <div className="text-left hidden sm:block">
               <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                {isAdmin && <Shield className="h-3 w-3 text-primary" />}
-                {isAdmin ? "مدير" : "مرحباً"}
+                {(isAdmin || isSupervisor) && <Shield className="h-3 w-3 text-primary" />}
+                {ROLE_LABEL[role]}
               </p>
               <p className="text-sm font-semibold leading-tight">{profileName}</p>
             </div>
@@ -241,9 +285,8 @@ export function Dashboard({ user }: { user: User }) {
 
       <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
         {/* ========= SPECIALIST ========= */}
-        {!isAdmin && (
+        {isSpecialist && (
           <>
-            {/* My schedule today */}
             <Card className="shadow-[var(--shadow-card)] border-accent/30">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -258,28 +301,13 @@ export function Dashboard({ user }: { user: User }) {
                 ) : (
                   <div className="space-y-2">
                     {myDayAppointments.map((a) => (
-                      <div key={a.id} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold">{a.case_name}</span>
-                            {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1" dir="ltr">
-                            {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
-                            {a.notes && <span dir="rtl"> · {a.notes}</span>}
-                          </p>
-                        </div>
-                        <Button size="sm" variant="outline" onClick={() => useAppointment(a)}>
-                          تسجيل
-                        </Button>
-                      </div>
+                      <AppointmentRow key={a.id} a={a} actionLabel="تسجيل" onAction={() => useAppointment(a)} />
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Add session form */}
             <Card className="shadow-[var(--shadow-card)]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -343,8 +371,8 @@ export function Dashboard({ user }: { user: User }) {
           </>
         )}
 
-        {/* ========= ADMIN: schedule manager ========= */}
-        {isAdmin && (
+        {/* ========= ADMIN / SUPERVISOR: schedule manager ========= */}
+        {canManageSchedule && (
           <Card className="shadow-[var(--shadow-card)] border-primary/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -407,7 +435,7 @@ export function Dashboard({ user }: { user: User }) {
           </Card>
         )}
 
-        {/* Filter + totals */}
+        {/* Date filter + counters */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-5 w-5 text-primary" />
@@ -415,90 +443,162 @@ export function Dashboard({ user }: { user: User }) {
             <Input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="w-auto" />
           </div>
           <p className="text-sm text-muted-foreground">
-            {totals.count} جلسة مسجَّلة
-            {isAdmin && ` · ${adminDayAppointments.length} موعد · ${adminGroups.length} أخصائي`}
+            {canManageSchedule && `${allDayAppointments.length} موعد`}
+            {isAdmin && ` · ${totals.count} جلسة مسجَّلة · ${adminGroups.length} أخصائي`}
+            {isSpecialist && `${totals.count} جلسة مسجَّلة`}
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard icon={<DollarSign className="h-5 w-5" />} label="إجمالي اليوم" value={totals.totalCost} />
-          <StatCard icon={<TrendingUp className="h-5 w-5" />} label={isAdmin ? "نصيب الأخصائيين" : "نصيبك"} value={totals.specialistShare} highlight />
-          <StatCard icon={<Clock className="h-5 w-5" />} label="نصيب المركز" value={totals.centerShare} />
-        </div>
+        {/* Stats — admin and specialist only (supervisor has no financial access) */}
+        {(isAdmin || isSpecialist) && (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <StatCard icon={<DollarSign className="h-5 w-5" />} label="إجمالي اليوم" value={totals.totalCost} />
+            <StatCard icon={<TrendingUp className="h-5 w-5" />} label={isAdmin ? "نصيب الأخصائيين" : "نصيبك"} value={totals.specialistShare} highlight />
+            <StatCard icon={<Clock className="h-5 w-5" />} label="نصيب المركز" value={totals.centerShare} />
+          </div>
+        )}
 
-        {/* Admin appointments overview */}
-        {isAdmin && adminDayAppointments.length > 0 && (
+        {/* Schedule view for admin/supervisor */}
+        {canManageSchedule && (
           <Card className="shadow-[var(--shadow-card)]">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <CalendarClock className="h-4 w-4 text-primary" />
-                مواعيد اليوم (جدول الأخصائيين)
+                جدول اليوم
+                <span className="text-xs text-muted-foreground font-normal">({allDayAppointments.length})</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {adminDayAppointments.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold">{a.case_name}</span>
-                        {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
-                        <span className="text-xs text-muted-foreground">— {profilesMap[a.specialist_id] || "—"}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1" dir="ltr">
-                        {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
-                      </p>
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={() => removeAppointment(a.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+              {allDayAppointments.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">لا توجد مواعيد في هذا اليوم</p>
+              ) : (
+                <div className="space-y-2">
+                  {allDayAppointments.map((a) => (
+                    <AppointmentRow
+                      key={a.id}
+                      a={a}
+                      subtitle={profilesMap[a.specialist_id] || "—"}
+                      onRemove={() => removeAppointment(a.id)}
+                    />
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {/* Sessions */}
-        {loading ? (
-          <p className="py-8 text-center text-muted-foreground">جارٍ التحميل...</p>
-        ) : dayRows.length === 0 ? (
+        {/* Admin: role management */}
+        {isAdmin && (
           <Card className="shadow-[var(--shadow-card)]">
-            <CardContent className="py-12 text-center text-muted-foreground">لا توجد جلسات مسجَّلة في هذا اليوم</CardContent>
-          </Card>
-        ) : isAdmin ? (
-          <div className="space-y-4">
-            {adminGroups.map((g) => (
-              <Card key={g.id} className="shadow-[var(--shadow-card)]">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center justify-between gap-2 flex-wrap">
-                    <span className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-primary" />
-                      {g.name}
-                      <span className="text-xs text-muted-foreground font-normal">({g.rows.length} جلسة)</span>
-                    </span>
-                    <span className="flex gap-4 text-xs font-normal">
-                      <span>إجمالي: <b>{g.total.toFixed(2)}</b></span>
-                      <span className="text-primary">نصيبه: <b>{g.share.toFixed(2)}</b></span>
-                      <span className="text-muted-foreground">المركز: <b>{g.center.toFixed(2)}</b></span>
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <SessionsTable rows={g.rows} onPercentage={updatePercentage} onRemove={removeSession} />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="shadow-[var(--shadow-card)]">
-            <CardHeader><CardTitle className="text-lg">الجلسات المسجَّلة</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <UserCog className="h-4 w-4 text-primary" />
+                إدارة صلاحيات المستخدمين
+              </CardTitle>
+            </CardHeader>
             <CardContent>
-              <SessionsTable rows={dayRows} onPercentage={updatePercentage} onRemove={removeSession} totals={totals} />
+              {allUsersForRoles.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">لا يوجد مستخدمون آخرون بعد</p>
+              ) : (
+                <div className="divide-y">
+                  {allUsersForRoles.map((u) => (
+                    <div key={u.id} className="flex items-center justify-between gap-3 py-3">
+                      <div>
+                        <p className="text-sm font-medium">{u.name}</p>
+                        <p className="text-xs text-muted-foreground">الدور الحالي: {ROLE_LABEL[u.role]}</p>
+                      </div>
+                      <Select value={u.role} onValueChange={(v) => changeUserRole(u.id, v as Role)}>
+                        <SelectTrigger className="w-32 h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="specialist">أخصائي</SelectItem>
+                          <SelectItem value="supervisor">مشرف</SelectItem>
+                          <SelectItem value="admin">مدير</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
+
+        {/* Sessions — admin (grouped) or specialist (own) */}
+        {!isSupervisor && (
+          loading ? (
+            <p className="py-8 text-center text-muted-foreground">جارٍ التحميل...</p>
+          ) : dayRows.length === 0 ? (
+            <Card className="shadow-[var(--shadow-card)]">
+              <CardContent className="py-12 text-center text-muted-foreground">لا توجد جلسات مسجَّلة في هذا اليوم</CardContent>
+            </Card>
+          ) : isAdmin ? (
+            <div className="space-y-4">
+              {adminGroups.map((g) => (
+                <Card key={g.id} className="shadow-[var(--shadow-card)]">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center justify-between gap-2 flex-wrap">
+                      <span className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        {g.name}
+                        <span className="text-xs text-muted-foreground font-normal">({g.rows.length} جلسة)</span>
+                      </span>
+                      <span className="flex gap-4 text-xs font-normal">
+                        <span>إجمالي: <b>{g.total.toFixed(2)}</b></span>
+                        <span className="text-primary">نصيبه: <b>{g.share.toFixed(2)}</b></span>
+                        <span className="text-muted-foreground">المركز: <b>{g.center.toFixed(2)}</b></span>
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <SessionsTable rows={g.rows} onPercentage={updatePercentage} onRemove={removeSession} />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="shadow-[var(--shadow-card)]">
+              <CardHeader><CardTitle className="text-lg">الجلسات المسجَّلة</CardTitle></CardHeader>
+              <CardContent>
+                <SessionsTable rows={dayRows} onPercentage={updatePercentage} onRemove={removeSession} totals={totals} />
+              </CardContent>
+            </Card>
+          )
+        )}
       </main>
+    </div>
+  );
+}
+
+function AppointmentRow({
+  a, subtitle, actionLabel, onAction, onRemove,
+}: {
+  a: Appointment;
+  subtitle?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  onRemove?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold">{a.case_name}</span>
+          {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
+          {subtitle && <span className="text-xs text-muted-foreground">— {subtitle}</span>}
+        </div>
+        <p className="text-xs text-muted-foreground mt-1" dir="ltr">
+          {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
+          {a.notes && <span dir="rtl"> · {a.notes}</span>}
+        </p>
+      </div>
+      {actionLabel && onAction && (
+        <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
+      )}
+      {onRemove && (
+        <Button variant="ghost" size="icon" onClick={onRemove}>
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      )}
     </div>
   );
 }
