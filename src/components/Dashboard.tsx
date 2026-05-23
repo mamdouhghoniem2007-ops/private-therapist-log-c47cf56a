@@ -700,24 +700,27 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove, onCostChange, onPercentageChange,
+  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange,
 }: {
   a: Appointment;
   subtitle?: string;
   actionLabel?: string;
   onAction?: () => void;
   onRemove?: () => void;
+  onCancel?: () => void;
   onCostChange?: (v: number) => void;
   onPercentageChange?: (v: number) => void;
 }) {
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
   const share = a.cost != null ? (Number(a.cost) * Number(a.specialist_percentage)) / 100 : null;
+  const isCancelled = a.status === "cancelled";
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3 flex-wrap">
+    <div className={`flex items-center justify-between gap-3 rounded-lg border p-3 flex-wrap ${isCancelled ? "bg-destructive/5 border-destructive/30" : "bg-muted/30"}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-semibold">{a.case_name}</span>
+          <span className={`font-semibold ${isCancelled ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
+          {isCancelled && <span className="text-xs rounded bg-destructive/15 px-2 py-0.5 text-destructive font-semibold">اعتذرت</span>}
           {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
           {a.test_type && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary">{a.test_type}</span>}
           {subtitle && <span className="text-xs text-muted-foreground">— {subtitle}</span>}
