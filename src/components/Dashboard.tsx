@@ -105,6 +105,7 @@ export function Dashboard({ user }: { user: User }) {
   const [aCost, setACost] = useState<number | "">("");
   const [aPercentage, setAPercentage] = useState(50);
   const [aNotes, setANotes] = useState("");
+  const [aCaseWhatsapp, setACaseWhatsapp] = useState("");
   const [aSubmitting, setASubmitting] = useState(false);
 
 
