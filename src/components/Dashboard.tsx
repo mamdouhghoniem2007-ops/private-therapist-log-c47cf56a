@@ -121,6 +121,7 @@ export function Dashboard({ user }: { user: User }) {
   const [aPercentage, setAPercentage] = useState(50);
   const [aNotes, setANotes] = useState("");
   const [aCaseWhatsapp, setACaseWhatsapp] = useState("");
+  const [aSessionKind, setASessionKind] = useState<SessionKind>("regular");
   const [aSubmitting, setASubmitting] = useState(false);
 
 
