@@ -59,6 +59,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "مركز رعاية — للتخاطب والتأهيل" },
       { name: "description", content: "نظام إدارة جلسات الأخصائيين بمركز رعاية للتخاطب والتأهيل" },
+      { property: "og:title", content: "مركز رعاية — للتخاطب والتأهيل" },
+      { name: "twitter:title", content: "مركز رعاية — للتخاطب والتأهيل" },
+      { property: "og:description", content: "نظام إدارة جلسات الأخصائيين بمركز رعاية للتخاطب والتأهيل" },
+      { name: "twitter:description", content: "نظام إدارة جلسات الأخصائيين بمركز رعاية للتخاطب والتأهيل" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
