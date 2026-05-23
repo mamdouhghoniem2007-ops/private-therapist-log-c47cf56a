@@ -57,8 +57,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "سجل الجلسات — مركز الاحتياجات الخاصة" },
-      { name: "description", content: "نظام إدارة جلسات الأخصائيين بمركز الاحتياجات الخاصة" },
+      { title: "مركز رعاية — للتخاطب والتأهيل" },
+      { name: "description", content: "نظام إدارة جلسات الأخصائيين بمركز رعاية للتخاطب والتأهيل" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

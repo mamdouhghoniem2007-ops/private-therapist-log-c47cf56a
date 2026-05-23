@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, User as UserIcon } from "lucide-react";
+import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 type Session = {
   id: string;
@@ -98,21 +99,25 @@ export function Dashboard({ user }: { user: User }) {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="border-b bg-card/70 backdrop-blur sticky top-0 z-10">
-        <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-4">
+      <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-10">
+        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground">
-              <UserIcon className="h-5 w-5" />
-            </div>
+            <img src={logo} alt="مركز رعاية" className="h-12 w-auto" />
             <div>
-              <p className="text-xs text-muted-foreground">مرحباً</p>
-              <p className="font-semibold leading-tight">{profileName}</p>
+              <p className="font-bold text-primary leading-tight">مركز رعاية</p>
+              <p className="text-[11px] text-accent-foreground leading-tight">للتخاطب والتأهيل</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()}>
-            <LogOut className="h-4 w-4 ml-2" />
-            خروج
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="text-left hidden sm:block">
+              <p className="text-xs text-muted-foreground">مرحباً</p>
+              <p className="text-sm font-semibold leading-tight">{profileName}</p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()}>
+              <LogOut className="h-4 w-4 ml-1" />
+              خروج
+            </Button>
+          </div>
         </div>
       </header>
 
