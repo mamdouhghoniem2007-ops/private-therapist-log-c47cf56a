@@ -229,12 +229,13 @@ export function Dashboard({ user }: { user: User }) {
       specialist_percentage: aPercentage,
       notes: aNotes.trim() || null,
       case_whatsapp: aCaseWhatsapp.trim() || null,
+      session_kind: aSessionKind,
       created_by: user.id,
     });
     setASubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تم إضافة الموعد للجدول");
-    setACase(""); setANotes(""); setACost(""); setACaseWhatsapp("");
+    setACase(""); setANotes(""); setACost(""); setACaseWhatsapp(""); setASessionKind("regular");
     loadAll();
   };
 
