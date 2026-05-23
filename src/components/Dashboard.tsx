@@ -22,6 +22,7 @@ type Session = {
   cost: number;
   specialist_percentage: number;
   session_type: string | null;
+  test_type: string | null;
 };
 
 type Appointment = {
@@ -32,6 +33,9 @@ type Appointment = {
   scheduled_time: string;
   duration_minutes: number;
   session_type: string | null;
+  test_type: string | null;
+  cost: number | null;
+  specialist_percentage: number;
   notes: string | null;
 };
 
@@ -42,8 +46,22 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
-const SESSION_TYPES = ["تخاطب", "تأهيل", "تعديل سلوك", "تنمية مهارات", "صعوبات تعلم", "علاج وظيفي", "تقييم"];
+const TESTS_LABEL = "اختبارات";
+const SESSION_TYPES = ["تخاطب", "تأهيل", "تعديل سلوك", "تنمية مهارات", "صعوبات تعلم", "علاج وظيفي", "تقييم", TESTS_LABEL];
+const TEST_TYPES = [
+  "IQ ستانفورد بينيه",
+  "وكسلر للأطفال",
+  "مقياس جيليام للتوحد (GARS)",
+  "بورتاج للنمو",
+  "فاينلاند للسلوك التكيفي",
+  "بيبودي للمفردات (PPVT)",
+  "مقياس اللغة المستقبلة والتعبيرية (REEL)",
+  "مقياس فرص الانتباه (Conners)",
+  "اختبار صعوبات التعلم",
+  "تقييم النطق والكلام",
+];
 const ROLE_LABEL: Record<Role, string> = { admin: "مدير", supervisor: "مشرف", specialist: "أخصائي" };
+
 
 export function Dashboard({ user }: { user: User }) {
   const [profileName, setProfileName] = useState<string>("");
@@ -63,6 +81,7 @@ export function Dashboard({ user }: { user: User }) {
   const [sTime, setSTime] = useState("10:00");
   const [duration, setDuration] = useState(45);
   const [sType, setSType] = useState(SESSION_TYPES[0]);
+  const [sTestType, setSTestType] = useState(TEST_TYPES[0]);
   const [cost, setCost] = useState<number | "">("");
   const [percentage, setPercentage] = useState(50);
   const [submitting, setSubmitting] = useState(false);
@@ -74,8 +93,12 @@ export function Dashboard({ user }: { user: User }) {
   const [aTime, setATime] = useState("10:00");
   const [aDuration, setADuration] = useState(45);
   const [aType, setAType] = useState(SESSION_TYPES[0]);
+  const [aTestType, setATestType] = useState(TEST_TYPES[0]);
+  const [aCost, setACost] = useState<number | "">("");
+  const [aPercentage, setAPercentage] = useState(50);
   const [aNotes, setANotes] = useState("");
   const [aSubmitting, setASubmitting] = useState(false);
+
 
   const isAdmin = role === "admin";
   const isSupervisor = role === "supervisor";
@@ -149,6 +172,7 @@ export function Dashboard({ user }: { user: User }) {
       cost: Number(cost),
       specialist_percentage: percentage,
       session_type: sType,
+      test_type: sType === TESTS_LABEL ? sTestType : null,
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
@@ -168,13 +192,16 @@ export function Dashboard({ user }: { user: User }) {
       scheduled_time: aTime,
       duration_minutes: aDuration,
       session_type: aType,
+      test_type: aType === TESTS_LABEL ? aTestType : null,
+      cost: aCost === "" ? null : Number(aCost),
+      specialist_percentage: aPercentage,
       notes: aNotes.trim() || null,
       created_by: user.id,
     });
     setASubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تم إضافة الموعد للجدول");
-    setACase(""); setANotes("");
+    setACase(""); setANotes(""); setACost("");
     loadAll();
   };
 
@@ -185,12 +212,27 @@ export function Dashboard({ user }: { user: User }) {
     toast.success("تم حذف الموعد");
   };
 
+  const updateAppointmentCost = async (id: string, value: number) => {
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, cost: value } : x)));
+    const { error } = await supabase.from("appointments").update({ cost: value }).eq("id", id);
+    if (error) toast.error(error.message);
+  };
+
+  const updateAppointmentPercentage = async (id: string, value: number) => {
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, specialist_percentage: value } : x)));
+    const { error } = await supabase.from("appointments").update({ specialist_percentage: value }).eq("id", id);
+    if (error) toast.error(error.message);
+  };
+
   const useAppointment = (a: Appointment) => {
     setCaseName(a.case_name);
     setSDate(a.scheduled_date);
     setSTime(a.scheduled_time.slice(0, 5));
     setDuration(a.duration_minutes);
     if (a.session_type) setSType(a.session_type);
+    if (a.test_type) setSTestType(a.test_type);
+    if (a.cost != null) setCost(Number(a.cost));
+    if (a.specialist_percentage != null) setPercentage(Number(a.specialist_percentage));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -206,6 +248,7 @@ export function Dashboard({ user }: { user: User }) {
     const { error } = await supabase.from("sessions").update({ specialist_percentage: value }).eq("id", id);
     if (error) toast.error(error.message);
   };
+
 
   // Admin role management
   const changeUserRole = async (userId: string, newRole: Role) => {
@@ -330,6 +373,18 @@ export function Dashboard({ user }: { user: User }) {
                       </SelectContent>
                     </Select>
                   </div>
+                  {sType === TESTS_LABEL && (
+                    <div className="space-y-2 lg:col-span-2">
+                      <Label>نوع الاختبار</Label>
+                      <Select value={sTestType} onValueChange={setSTestType}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {TEST_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label>التاريخ</Label>
                     <Input type="date" required value={sDate} onChange={(e) => setSDate(e.target.value)} />
@@ -404,6 +459,17 @@ export function Dashboard({ user }: { user: User }) {
                     </SelectContent>
                   </Select>
                 </div>
+                {aType === TESTS_LABEL && (
+                  <div className="space-y-2 lg:col-span-2">
+                    <Label>نوع الاختبار</Label>
+                    <Select value={aTestType} onValueChange={setATestType}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TEST_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>التاريخ</Label>
                   <Input type="date" required value={aDate} onChange={(e) => setADate(e.target.value)} />
@@ -421,6 +487,23 @@ export function Dashboard({ user }: { user: User }) {
                     </SelectContent>
                   </Select>
                 </div>
+                {isAdmin && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>تكلفة الجلسة (ما يدفعه الطفل)</Label>
+                      <Input type="number" min={0} step="0.01" value={aCost} onChange={(e) => setACost(e.target.value === "" ? "" : +e.target.value)} placeholder="0" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>نسبة الأخصائي</Label>
+                      <Select value={String(aPercentage)} onValueChange={(v) => setAPercentage(+v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {PERCENTAGE_OPTIONS.map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
                 <div className="space-y-2 lg:col-span-3">
                   <Label>ملاحظات (اختياري)</Label>
                   <Input value={aNotes} onChange={(e) => setANotes(e.target.value)} placeholder="..." />
@@ -430,6 +513,7 @@ export function Dashboard({ user }: { user: User }) {
                     {aSubmitting ? "جارٍ الحفظ..." : "إضافة للجدول"}
                   </Button>
                 </div>
+
               </form>
             </CardContent>
           </Card>
@@ -479,8 +563,11 @@ export function Dashboard({ user }: { user: User }) {
                       a={a}
                       subtitle={profilesMap[a.specialist_id] || "—"}
                       onRemove={() => removeAppointment(a.id)}
+                      onCostChange={isAdmin ? (v) => updateAppointmentCost(a.id, v) : undefined}
+                      onPercentageChange={isAdmin ? (v) => updateAppointmentPercentage(a.id, v) : undefined}
                     />
                   ))}
+
                 </div>
               )}
             </CardContent>
@@ -570,27 +657,62 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove,
+  a, subtitle, actionLabel, onAction, onRemove, onCostChange, onPercentageChange,
 }: {
   a: Appointment;
   subtitle?: string;
   actionLabel?: string;
   onAction?: () => void;
   onRemove?: () => void;
+  onCostChange?: (v: number) => void;
+  onPercentageChange?: (v: number) => void;
 }) {
+  const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
+  useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
+  const share = a.cost != null ? (Number(a.cost) * Number(a.specialist_percentage)) / 100 : null;
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+    <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3 flex-wrap">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold">{a.case_name}</span>
           {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
+          {a.test_type && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary">{a.test_type}</span>}
           {subtitle && <span className="text-xs text-muted-foreground">— {subtitle}</span>}
         </div>
         <p className="text-xs text-muted-foreground mt-1" dir="ltr">
           {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
+          {a.cost != null && !onCostChange && <span dir="rtl"> · تكلفة: {Number(a.cost).toFixed(2)}</span>}
+          {!onPercentageChange && <span dir="rtl"> · نسبة: {a.specialist_percentage}%</span>}
+          {share != null && <span dir="rtl"> · نصيب الأخصائي: {share.toFixed(2)}</span>}
           {a.notes && <span dir="rtl"> · {a.notes}</span>}
         </p>
       </div>
+      {onCostChange && (
+        <div className="flex items-center gap-1">
+          <Label className="text-xs text-muted-foreground">تكلفة</Label>
+          <Input
+            type="number" min={0} step="0.01"
+            className="h-8 w-24"
+            value={costDraft}
+            onChange={(e) => setCostDraft(e.target.value)}
+            onBlur={() => {
+              const v = costDraft === "" ? NaN : Number(costDraft);
+              if (!Number.isNaN(v) && v !== Number(a.cost)) onCostChange(v);
+            }}
+          />
+        </div>
+      )}
+      {onPercentageChange && (
+        <div className="flex items-center gap-1">
+          <Label className="text-xs text-muted-foreground">نسبة</Label>
+          <Select value={String(a.specialist_percentage)} onValueChange={(v) => onPercentageChange(+v)}>
+            <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {PERCENTAGE_OPTIONS.map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       {actionLabel && onAction && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
       )}
@@ -602,6 +724,7 @@ function AppointmentRow({
     </div>
   );
 }
+
 
 function SessionsTable({
   rows, onPercentage, onRemove, totals,
@@ -632,7 +755,7 @@ function SessionsTable({
             return (
               <tr key={s.id} className="hover:bg-muted/40 transition-colors">
                 <td className="py-3 pr-2 font-medium">{s.case_name}</td>
-                <td className="py-3 px-2 text-muted-foreground">{s.session_type || "—"}</td>
+                <td className="py-3 px-2 text-muted-foreground">{s.session_type || "—"}{s.test_type && <span className="block text-xs text-primary">{s.test_type}</span>}</td>
                 <td className="py-3 px-2 text-muted-foreground" dir="ltr">{s.session_time.slice(0, 5)}</td>
                 <td className="py-3 px-2 text-muted-foreground">{s.duration_minutes} د</td>
                 <td className="py-3 px-2">{Number(s.cost).toFixed(2)}</td>
