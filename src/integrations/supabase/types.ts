@@ -17,6 +17,7 @@ export type Database = {
       appointments: {
         Row: {
           case_name: string
+          case_whatsapp: string | null
           cost: number | null
           created_at: string
           created_by: string | null
@@ -28,10 +29,12 @@ export type Database = {
           session_type: string | null
           specialist_id: string
           specialist_percentage: number
+          status: string
           test_type: string | null
         }
         Insert: {
           case_name: string
+          case_whatsapp?: string | null
           cost?: number | null
           created_at?: string
           created_by?: string | null
@@ -43,10 +46,12 @@ export type Database = {
           session_type?: string | null
           specialist_id: string
           specialist_percentage?: number
+          status?: string
           test_type?: string | null
         }
         Update: {
           case_name?: string
+          case_whatsapp?: string | null
           cost?: number | null
           created_at?: string
           created_by?: string | null
@@ -58,6 +63,7 @@ export type Database = {
           session_type?: string | null
           specialist_id?: string
           specialist_percentage?: number
+          status?: string
           test_type?: string | null
         }
         Relationships: []
@@ -67,16 +73,19 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          whatsapp_number: string | null
         }
         Insert: {
           created_at?: string
           full_name: string
           id: string
+          whatsapp_number?: string | null
         }
         Update: {
           created_at?: string
           full_name?: string
           id?: string
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
