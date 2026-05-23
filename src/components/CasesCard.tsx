@@ -7,7 +7,22 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, RefreshCw } from "lucide-react";
+import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+
+type CaseAppt = {
+  id: string;
+  scheduled_date: string;
+  scheduled_time: string;
+  status: string;
+  session_kind: string;
+};
+
+const KIND_LABEL: Record<string, string> = {
+  regular: "عادية",
+  initial_assessment: "تقييم مبدئي",
+  test: "اختبار",
+  periodic_assessment: "تقييم دوري",
+};
 
 type Role = "admin" | "supervisor" | "specialist";
 
