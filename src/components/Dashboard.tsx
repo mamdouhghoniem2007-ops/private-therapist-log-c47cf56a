@@ -88,6 +88,8 @@ export function Dashboard({ user }: { user: User }) {
   const [sTestType, setSTestType] = useState(TEST_TYPES[0]);
   const [cost, setCost] = useState<number | "">("");
   const [percentage, setPercentage] = useState(50);
+  const [sNotes, setSNotes] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
 
   // appointment form (admin / supervisor)
