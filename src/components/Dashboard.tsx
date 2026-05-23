@@ -759,9 +759,6 @@ function AppointmentRow({
           </Select>
         </div>
       )}
-      {actionLabel && onAction && (
-        <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
-      )}
       {actionLabel && onAction && !isCancelled && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
       )}
