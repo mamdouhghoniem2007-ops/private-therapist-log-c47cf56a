@@ -768,7 +768,7 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial,
+  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd,
 }: {
   a: Appointment;
   subtitle?: string;
@@ -779,23 +779,32 @@ function AppointmentRow({
   onCostChange?: (v: number) => void;
   onPercentageChange?: (v: number) => void;
   hideFinancial?: boolean;
+  onStart?: () => void;
+  onEnd?: () => void;
 }) {
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
   const share = a.cost != null ? (Number(a.cost) * Number(a.specialist_percentage)) / 100 : null;
   const isCancelled = a.status === "cancelled";
+  const fmtT = (ts: string | null) => ts ? new Date(ts).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : null;
+  const startedTxt = fmtT(a.started_at);
+  const endedTxt = fmtT(a.ended_at);
   return (
     <div className={`flex items-center justify-between gap-3 rounded-lg border p-3 flex-wrap ${isCancelled ? "bg-destructive/5 border-destructive/30" : "bg-muted/30"}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`font-semibold ${isCancelled ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
           {isCancelled && <span className="text-xs rounded bg-destructive/15 px-2 py-0.5 text-destructive font-semibold">اعتذرت</span>}
+          {startedTxt && !endedTxt && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary font-semibold">جارية</span>}
+          {endedTxt && <span className="text-xs rounded bg-emerald-500/15 px-2 py-0.5 text-emerald-600 font-semibold">منتهية</span>}
           {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
           {a.test_type && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary">{a.test_type}</span>}
           {subtitle && <span className="text-xs text-muted-foreground">— {subtitle}</span>}
         </div>
         <p className="text-xs text-muted-foreground mt-1" dir="ltr">
           {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
+          {startedTxt && <span dir="rtl"> · بدأت: {startedTxt}</span>}
+          {endedTxt && <span dir="rtl"> · انتهت: {endedTxt}</span>}
           {!hideFinancial && a.cost != null && !onCostChange && <span dir="rtl"> · تكلفة: {Number(a.cost).toFixed(2)}</span>}
           {!hideFinancial && !onPercentageChange && <span dir="rtl"> · نسبة: {a.specialist_percentage}%</span>}
           {!hideFinancial && share != null && <span dir="rtl"> · نصيب الأخصائي: {share.toFixed(2)}</span>}
