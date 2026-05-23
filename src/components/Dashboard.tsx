@@ -228,7 +228,7 @@ export function Dashboard({ user }: { user: User }) {
     setAppointments((a) => a.map((x) => (x.id === id ? { ...x, status: "cancelled" } : x)));
     const appt = appointments.find((x) => x.id === id);
     toast.success("تم تسجيل اعتذار الحالة", {
-      description: appt ? `${appt.case_name} · ${appt.scheduled_date} ${appt.scheduled_time.slice(0,5)} — سيصل إشعار للأخصائي.` : undefined,
+      description: appt ? `${appt.case_name} · ${appt.scheduled_date} ${appt.scheduled_time.slice(0,5)}` : undefined,
       duration: 6000,
     });
   };
@@ -605,7 +605,6 @@ export function Dashboard({ user }: { user: User }) {
                       a={a}
                       subtitle={profilesMap[a.specialist_id] || "—"}
                       onRemove={() => removeAppointment(a.id)}
-                      onCancel={a.status !== "cancelled" ? () => markAppointmentCancelled(a.id) : undefined}
                       onCostChange={isAdmin ? (v) => updateAppointmentCost(a.id, v) : undefined}
                       onPercentageChange={isAdmin ? (v) => updateAppointmentPercentage(a.id, v) : undefined}
                     />
