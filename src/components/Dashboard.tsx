@@ -41,6 +41,8 @@ type Appointment = {
   cost: number | null;
   specialist_percentage: number;
   notes: string | null;
+  case_whatsapp: string | null;
+  status: string;
 };
 
 type Profile = { id: string; full_name: string };
@@ -103,6 +105,7 @@ export function Dashboard({ user }: { user: User }) {
   const [aCost, setACost] = useState<number | "">("");
   const [aPercentage, setAPercentage] = useState(50);
   const [aNotes, setANotes] = useState("");
+  const [aCaseWhatsapp, setACaseWhatsapp] = useState("");
   const [aSubmitting, setASubmitting] = useState(false);
 
 
@@ -209,13 +212,25 @@ export function Dashboard({ user }: { user: User }) {
       cost: aCost === "" ? null : Number(aCost),
       specialist_percentage: aPercentage,
       notes: aNotes.trim() || null,
+      case_whatsapp: aCaseWhatsapp.trim() || null,
       created_by: user.id,
     });
     setASubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تم إضافة الموعد للجدول");
-    setACase(""); setANotes(""); setACost("");
+    setACase(""); setANotes(""); setACost(""); setACaseWhatsapp("");
     loadAll();
+  };
+
+  const markAppointmentCancelled = async (id: string) => {
+    const { error } = await supabase.from("appointments").update({ status: "cancelled" }).eq("id", id);
+    if (error) return toast.error(error.message);
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, status: "cancelled" } : x)));
+    const appt = appointments.find((x) => x.id === id);
+    toast.success("تم تسجيل اعتذار الحالة", {
+      description: appt ? `${appt.case_name} · ${appt.scheduled_date} ${appt.scheduled_time.slice(0,5)} — سيصل إشعار للأخصائي.` : undefined,
+      duration: 6000,
+    });
   };
 
   const removeAppointment = async (id: string) => {
@@ -357,7 +372,7 @@ export function Dashboard({ user }: { user: User }) {
                 ) : (
                   <div className="space-y-2">
                     {myDayAppointments.map((a) => (
-                      <AppointmentRow key={a.id} a={a} actionLabel="تسجيل" onAction={() => useAppointment(a)} />
+                      <AppointmentRow key={a.id} a={a} actionLabel="تسجيل" onAction={() => useAppointment(a)} onCancel={a.status !== "cancelled" ? () => markAppointmentCancelled(a.id) : undefined} />
                     ))}
                   </div>
                 )}
@@ -527,11 +542,15 @@ export function Dashboard({ user }: { user: User }) {
                     </div>
                   </>
                 )}
-                <div className="space-y-2 lg:col-span-3">
+                <div className="space-y-2 lg:col-span-2">
+                  <Label>رقم WhatsApp للحالة</Label>
+                  <Input value={aCaseWhatsapp} onChange={(e) => setACaseWhatsapp(e.target.value)} placeholder="+201234567890" dir="ltr" />
+                </div>
+                <div className="space-y-2 lg:col-span-2">
                   <Label>ملاحظات (اختياري)</Label>
                   <Input value={aNotes} onChange={(e) => setANotes(e.target.value)} placeholder="..." />
                 </div>
-                <div className="lg:col-span-3 flex items-end">
+                <div className="lg:col-span-2 flex items-end">
                   <Button type="submit" disabled={aSubmitting} className="w-full lg:w-auto">
                     {aSubmitting ? "جارٍ الحفظ..." : "إضافة للجدول"}
                   </Button>
@@ -586,6 +605,7 @@ export function Dashboard({ user }: { user: User }) {
                       a={a}
                       subtitle={profilesMap[a.specialist_id] || "—"}
                       onRemove={() => removeAppointment(a.id)}
+                      onCancel={a.status !== "cancelled" ? () => markAppointmentCancelled(a.id) : undefined}
                       onCostChange={isAdmin ? (v) => updateAppointmentCost(a.id, v) : undefined}
                       onPercentageChange={isAdmin ? (v) => updateAppointmentPercentage(a.id, v) : undefined}
                     />
@@ -680,24 +700,27 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove, onCostChange, onPercentageChange,
+  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange,
 }: {
   a: Appointment;
   subtitle?: string;
   actionLabel?: string;
   onAction?: () => void;
   onRemove?: () => void;
+  onCancel?: () => void;
   onCostChange?: (v: number) => void;
   onPercentageChange?: (v: number) => void;
 }) {
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
   const share = a.cost != null ? (Number(a.cost) * Number(a.specialist_percentage)) / 100 : null;
+  const isCancelled = a.status === "cancelled";
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3 flex-wrap">
+    <div className={`flex items-center justify-between gap-3 rounded-lg border p-3 flex-wrap ${isCancelled ? "bg-destructive/5 border-destructive/30" : "bg-muted/30"}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-semibold">{a.case_name}</span>
+          <span className={`font-semibold ${isCancelled ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
+          {isCancelled && <span className="text-xs rounded bg-destructive/15 px-2 py-0.5 text-destructive font-semibold">اعتذرت</span>}
           {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
           {a.test_type && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary">{a.test_type}</span>}
           {subtitle && <span className="text-xs text-muted-foreground">— {subtitle}</span>}
@@ -736,8 +759,13 @@ function AppointmentRow({
           </Select>
         </div>
       )}
-      {actionLabel && onAction && (
+      {actionLabel && onAction && !isCancelled && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
+      )}
+      {onCancel && !isCancelled && (
+        <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10" onClick={onCancel}>
+          اعتذرت اليوم
+        </Button>
       )}
       {onRemove && (
         <Button variant="ghost" size="icon" onClick={onRemove}>

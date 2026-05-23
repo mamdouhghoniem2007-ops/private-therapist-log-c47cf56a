@@ -14,6 +14,7 @@ export function AuthForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [loading, setLoading] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
@@ -21,11 +22,12 @@ export function AuthForm() {
     setLoading(true);
     try {
       if (mode === "signup") {
+        if (!whatsapp.trim()) throw new Error("أدخل رقم WhatsApp");
         const { error } = await supabase.auth.signUp({
           email, password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { full_name: fullName },
+            data: { full_name: fullName, whatsapp_number: whatsapp.trim() },
           },
         });
         if (error) throw error;
@@ -70,10 +72,17 @@ export function AuthForm() {
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
             {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="name">الاسم الكامل</Label>
-                <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="أ. محمد علي" />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="name">الاسم الكامل</Label>
+                  <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="أ. محمد علي" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp">رقم WhatsApp</Label>
+                  <Input id="whatsapp" required value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+201234567890" dir="ltr" />
+                  <p className="text-[11px] text-muted-foreground">يُستخدم لإرسال إشعارات الجدول اليومي والاعتذارات.</p>
+                </div>
+              </>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">البريد الإلكتروني</Label>
