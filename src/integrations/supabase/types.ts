@@ -17,6 +17,7 @@ export type Database = {
       appointments: {
         Row: {
           case_name: string
+          cost: number | null
           created_at: string
           created_by: string | null
           duration_minutes: number
@@ -26,9 +27,12 @@ export type Database = {
           scheduled_time: string
           session_type: string | null
           specialist_id: string
+          specialist_percentage: number
+          test_type: string | null
         }
         Insert: {
           case_name: string
+          cost?: number | null
           created_at?: string
           created_by?: string | null
           duration_minutes?: number
@@ -38,9 +42,12 @@ export type Database = {
           scheduled_time: string
           session_type?: string | null
           specialist_id: string
+          specialist_percentage?: number
+          test_type?: string | null
         }
         Update: {
           case_name?: string
+          cost?: number | null
           created_at?: string
           created_by?: string | null
           duration_minutes?: number
@@ -50,6 +57,8 @@ export type Database = {
           scheduled_time?: string
           session_type?: string | null
           specialist_id?: string
+          specialist_percentage?: number
+          test_type?: string | null
         }
         Relationships: []
       }
@@ -83,6 +92,7 @@ export type Database = {
           session_type: string | null
           specialist_id: string
           specialist_percentage: number
+          test_type: string | null
         }
         Insert: {
           case_name: string
@@ -95,6 +105,7 @@ export type Database = {
           session_type?: string | null
           specialist_id: string
           specialist_percentage?: number
+          test_type?: string | null
         }
         Update: {
           case_name?: string
@@ -107,6 +118,7 @@ export type Database = {
           session_type?: string | null
           specialist_id?: string
           specialist_percentage?: number
+          test_type?: string | null
         }
         Relationships: []
       }
