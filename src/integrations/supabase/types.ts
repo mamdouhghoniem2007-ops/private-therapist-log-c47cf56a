@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          case_name: string
+          created_at: string
+          created_by: string | null
+          duration_minutes: number
+          id: string
+          notes: string | null
+          scheduled_date: string
+          scheduled_time: string
+          session_type: string | null
+          specialist_id: string
+        }
+        Insert: {
+          case_name: string
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          scheduled_date: string
+          scheduled_time: string
+          session_type?: string | null
+          specialist_id: string
+        }
+        Update: {
+          case_name?: string
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          scheduled_date?: string
+          scheduled_time?: string
+          session_type?: string | null
+          specialist_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -41,6 +80,7 @@ export type Database = {
           id: string
           session_date: string
           session_time: string
+          session_type: string | null
           specialist_id: string
           specialist_percentage: number
         }
@@ -52,6 +92,7 @@ export type Database = {
           id?: string
           session_date: string
           session_time: string
+          session_type?: string | null
           specialist_id: string
           specialist_percentage?: number
         }
@@ -63,6 +104,7 @@ export type Database = {
           id?: string
           session_date?: string
           session_time?: string
+          session_type?: string | null
           specialist_id?: string
           specialist_percentage?: number
         }

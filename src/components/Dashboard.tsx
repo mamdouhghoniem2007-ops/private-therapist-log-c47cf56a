@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users } from "lucide-react";
+import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 type Session = {
@@ -19,35 +19,59 @@ type Session = {
   duration_minutes: number;
   cost: number;
   specialist_percentage: number;
+  session_type: string | null;
+};
+
+type Appointment = {
+  id: string;
+  specialist_id: string;
+  case_name: string;
+  scheduled_date: string;
+  scheduled_time: string;
+  duration_minutes: number;
+  session_type: string | null;
+  notes: string | null;
 };
 
 type Profile = { id: string; full_name: string };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-// Preset options
 const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+const SESSION_TYPES = ["تخاطب", "تأهيل", "تعديل سلوك", "تنمية مهارات", "صعوبات تعلم", "علاج وظيفي", "تقييم"];
 
 export function Dashboard({ user }: { user: User }) {
   const [profileName, setProfileName] = useState<string>("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [roleReady, setRoleReady] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [specialists, setSpecialists] = useState<Profile[]>([]);
   const [profilesMap, setProfilesMap] = useState<Record<string, string>>({});
   const [filterDate, setFilterDate] = useState(today());
   const [loading, setLoading] = useState(true);
 
-  // form (specialist only)
+  // session form (specialist)
   const [caseName, setCaseName] = useState("");
-  const [date, setDate] = useState(today());
-  const [time, setTime] = useState("10:00");
+  const [sDate, setSDate] = useState(today());
+  const [sTime, setSTime] = useState("10:00");
   const [duration, setDuration] = useState(45);
+  const [sType, setSType] = useState(SESSION_TYPES[0]);
   const [cost, setCost] = useState<number | "">("");
   const [percentage, setPercentage] = useState(50);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load profile + role
+  // appointment form (admin)
+  const [aSpecialist, setASpecialist] = useState<string>("");
+  const [aCase, setACase] = useState("");
+  const [aDate, setADate] = useState(today());
+  const [aTime, setATime] = useState("10:00");
+  const [aDuration, setADuration] = useState(45);
+  const [aType, setAType] = useState(SESSION_TYPES[0]);
+  const [aNotes, setANotes] = useState("");
+  const [aSubmitting, setASubmitting] = useState(false);
+
   useEffect(() => {
     (async () => {
       const [{ data: prof }, { data: roles }] = await Promise.all([
@@ -60,25 +84,30 @@ export function Dashboard({ user }: { user: User }) {
     })();
   }, [user.id, user.email]);
 
-  const loadSessions = async () => {
+  const loadAll = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("sessions").select("*")
-      .order("session_date", { ascending: false })
-      .order("session_time", { ascending: false });
-    if (error) toast.error(error.message);
-    else setSessions((data as Session[]) || []);
+    const [sessionsRes, apptsRes] = await Promise.all([
+      supabase.from("sessions").select("*").order("session_date", { ascending: false }).order("session_time", { ascending: false }),
+      supabase.from("appointments").select("*").order("scheduled_date", { ascending: false }).order("scheduled_time"),
+    ]);
+    if (sessionsRes.error) toast.error(sessionsRes.error.message);
+    else setSessions((sessionsRes.data as Session[]) || []);
+    if (apptsRes.error) toast.error(apptsRes.error.message);
+    else setAppointments((apptsRes.data as Appointment[]) || []);
 
     if (isAdmin) {
       const { data: profs } = await supabase.from("profiles").select("id, full_name");
+      const list = (profs as Profile[] | null) || [];
+      setSpecialists(list);
       const map: Record<string, string> = {};
-      (profs as Profile[] | null)?.forEach((p) => (map[p.id] = p.full_name));
+      list.forEach((p) => (map[p.id] = p.full_name));
       setProfilesMap(map);
+      if (!aSpecialist && list.length) setASpecialist(list[0].id);
     }
     setLoading(false);
   };
 
-  useEffect(() => { if (roleReady) loadSessions(); /* eslint-disable-next-line */ }, [roleReady, isAdmin]);
+  useEffect(() => { if (roleReady) loadAll(); /* eslint-disable-next-line */ }, [roleReady, isAdmin]);
 
   const addSession = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,17 +116,55 @@ export function Dashboard({ user }: { user: User }) {
     const { error } = await supabase.from("sessions").insert({
       specialist_id: user.id,
       case_name: caseName.trim(),
-      session_date: date,
-      session_time: time,
+      session_date: sDate,
+      session_time: sTime,
       duration_minutes: duration,
       cost: Number(cost),
       specialist_percentage: percentage,
+      session_type: sType,
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تم تسجيل الجلسة");
     setCaseName(""); setCost("");
-    loadSessions();
+    loadAll();
+  };
+
+  const addAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aSpecialist) return toast.error("اختر الأخصائي");
+    setASubmitting(true);
+    const { error } = await supabase.from("appointments").insert({
+      specialist_id: aSpecialist,
+      case_name: aCase.trim(),
+      scheduled_date: aDate,
+      scheduled_time: aTime,
+      duration_minutes: aDuration,
+      session_type: aType,
+      notes: aNotes.trim() || null,
+      created_by: user.id,
+    });
+    setASubmitting(false);
+    if (error) return toast.error(error.message);
+    toast.success("تم إضافة الموعد للجدول");
+    setACase(""); setANotes("");
+    loadAll();
+  };
+
+  const removeAppointment = async (id: string) => {
+    const { error } = await supabase.from("appointments").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    setAppointments((a) => a.filter((x) => x.id !== id));
+    toast.success("تم حذف الموعد");
+  };
+
+  const useAppointment = (a: Appointment) => {
+    setCaseName(a.case_name);
+    setSDate(a.scheduled_date);
+    setSTime(a.scheduled_time.slice(0, 5));
+    setDuration(a.duration_minutes);
+    if (a.session_type) setSType(a.session_type);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const removeSession = async (id: string) => {
@@ -114,8 +181,15 @@ export function Dashboard({ user }: { user: User }) {
   };
 
   const dayRows = useMemo(() => sessions.filter((s) => s.session_date === filterDate), [sessions, filterDate]);
+  const myDayAppointments = useMemo(
+    () => appointments.filter((a) => a.specialist_id === user.id && a.scheduled_date === filterDate),
+    [appointments, user.id, filterDate],
+  );
+  const adminDayAppointments = useMemo(
+    () => appointments.filter((a) => a.scheduled_date === filterDate),
+    [appointments, filterDate],
+  );
 
-  // Admin: group by specialist
   const adminGroups = useMemo(() => {
     if (!isAdmin) return [];
     const groups: Record<string, { name: string; rows: Session[]; total: number; share: number; center: number }> = {};
@@ -135,8 +209,7 @@ export function Dashboard({ user }: { user: User }) {
   const totals = useMemo(() => {
     const totalCost = dayRows.reduce((sum, s) => sum + Number(s.cost), 0);
     const specialistShare = dayRows.reduce((sum, s) => sum + (Number(s.cost) * Number(s.specialist_percentage)) / 100, 0);
-    const centerShare = totalCost - specialistShare;
-    return { totalCost, specialistShare, centerShare, count: dayRows.length };
+    return { totalCost, specialistShare, centerShare: totalCost - specialistShare, count: dayRows.length };
   }, [dayRows]);
 
   return (
@@ -167,58 +240,166 @@ export function Dashboard({ user }: { user: User }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
-        {/* Specialist add form — hidden for admin */}
+        {/* ========= SPECIALIST ========= */}
         {!isAdmin && (
-          <Card className="shadow-[var(--shadow-card)]">
+          <>
+            {/* My schedule today */}
+            <Card className="shadow-[var(--shadow-card)] border-accent/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <CalendarClock className="h-5 w-5 text-accent-foreground" />
+                  جدولي ليوم {filterDate}
+                  <span className="text-xs text-muted-foreground font-normal">({myDayAppointments.length} موعد)</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {myDayAppointments.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">لا توجد مواعيد في هذا اليوم</p>
+                ) : (
+                  <div className="space-y-2">
+                    {myDayAppointments.map((a) => (
+                      <div key={a.id} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold">{a.case_name}</span>
+                            {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1" dir="ltr">
+                            {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
+                            {a.notes && <span dir="rtl"> · {a.notes}</span>}
+                          </p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => useAppointment(a)}>
+                          تسجيل
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Add session form */}
+            <Card className="shadow-[var(--shadow-card)]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Plus className="h-5 w-5 text-primary" />
+                  تسجيل جلسة جديدة
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={addSession} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+                  <div className="space-y-2 lg:col-span-2">
+                    <Label>اسم الحالة</Label>
+                    <Input required value={caseName} onChange={(e) => setCaseName(e.target.value)} placeholder="مثال: أحمد م." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>نوع الجلسة</Label>
+                    <Select value={sType} onValueChange={setSType}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {SESSION_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>التاريخ</Label>
+                    <Input type="date" required value={sDate} onChange={(e) => setSDate(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الوقت</Label>
+                    <Input type="time" required value={sTime} onChange={(e) => setSTime(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>المدة</Label>
+                    <Select value={String(duration)} onValueChange={(v) => setDuration(+v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {DURATION_OPTIONS.map((d) => <SelectItem key={d} value={String(d)}>{d} دقيقة</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>التكلفة</Label>
+                    <Input type="number" min={0} step="0.01" required value={cost} onChange={(e) => setCost(e.target.value === "" ? "" : +e.target.value)} placeholder="0" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>نسبة الأخصائي</Label>
+                    <Select value={String(percentage)} onValueChange={(v) => setPercentage(+v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {PERCENTAGE_OPTIONS.map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="sm:col-span-2 lg:col-span-5 flex items-end">
+                    <Button type="submit" disabled={submitting} className="w-full lg:w-auto">
+                      {submitting ? "جارٍ الحفظ..." : "إضافة الجلسة"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* ========= ADMIN: schedule manager ========= */}
+        {isAdmin && (
+          <Card className="shadow-[var(--shadow-card)] border-primary/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Plus className="h-5 w-5 text-primary" />
-                تسجيل جلسة جديدة
+                <CalendarPlus className="h-5 w-5 text-primary" />
+                إضافة موعد لجدول أخصائي
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={addSession} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+              <form onSubmit={addAppointment} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+                <div className="space-y-2 lg:col-span-2">
+                  <Label>الأخصائي</Label>
+                  <Select value={aSpecialist} onValueChange={setASpecialist}>
+                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                    <SelectContent>
+                      {specialists.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2 lg:col-span-2">
                   <Label>اسم الحالة</Label>
-                  <Input required value={caseName} onChange={(e) => setCaseName(e.target.value)} placeholder="مثال: أحمد م." />
+                  <Input required value={aCase} onChange={(e) => setACase(e.target.value)} placeholder="مثال: أحمد م." />
+                </div>
+                <div className="space-y-2">
+                  <Label>نوع الجلسة</Label>
+                  <Select value={aType} onValueChange={setAType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SESSION_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>التاريخ</Label>
-                  <Input type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+                  <Input type="date" required value={aDate} onChange={(e) => setADate(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>الوقت</Label>
-                  <Input type="time" required value={time} onChange={(e) => setTime(e.target.value)} />
+                  <Input type="time" required value={aTime} onChange={(e) => setATime(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>المدة</Label>
-                  <Select value={String(duration)} onValueChange={(v) => setDuration(+v)}>
+                  <Select value={String(aDuration)} onValueChange={(v) => setADuration(+v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {DURATION_OPTIONS.map((d) => (
-                        <SelectItem key={d} value={String(d)}>{d} دقيقة</SelectItem>
-                      ))}
+                      {DURATION_OPTIONS.map((d) => <SelectItem key={d} value={String(d)}>{d} دقيقة</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>التكلفة</Label>
-                  <Input type="number" min={0} step="0.01" required value={cost} onChange={(e) => setCost(e.target.value === "" ? "" : +e.target.value)} placeholder="0" />
+                <div className="space-y-2 lg:col-span-3">
+                  <Label>ملاحظات (اختياري)</Label>
+                  <Input value={aNotes} onChange={(e) => setANotes(e.target.value)} placeholder="..." />
                 </div>
-                <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-                  <Label>نسبة الأخصائي</Label>
-                  <Select value={String(percentage)} onValueChange={(v) => setPercentage(+v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {PERCENTAGE_OPTIONS.map((p) => (
-                        <SelectItem key={p} value={String(p)}>{p}%</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="sm:col-span-2 lg:col-span-5 flex items-end">
-                  <Button type="submit" disabled={submitting} className="w-full lg:w-auto">
-                    {submitting ? "جارٍ الحفظ..." : "إضافة الجلسة"}
+                <div className="lg:col-span-3 flex items-end">
+                  <Button type="submit" disabled={aSubmitting} className="w-full lg:w-auto">
+                    {aSubmitting ? "جارٍ الحفظ..." : "إضافة للجدول"}
                   </Button>
                 </div>
               </form>
@@ -226,30 +407,64 @@ export function Dashboard({ user }: { user: User }) {
           </Card>
         )}
 
-        {/* Filter + day totals */}
+        {/* Filter + totals */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-5 w-5 text-primary" />
-            <Label className="text-sm">عرض جلسات يوم:</Label>
+            <Label className="text-sm">عرض يوم:</Label>
             <Input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="w-auto" />
           </div>
           <p className="text-sm text-muted-foreground">
-            {totals.count} جلسة {isAdmin && `· ${adminGroups.length} أخصائي`}
+            {totals.count} جلسة مسجَّلة
+            {isAdmin && ` · ${adminDayAppointments.length} موعد · ${adminGroups.length} أخصائي`}
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard icon={<DollarSign className="h-5 w-5" />} label="إجمالي اليوم" value={totals.totalCost} />
-          <StatCard icon={<TrendingUp className="h-5 w-5" />} label={isAdmin ? "نصيب الأخصائيين" : "نصيب الأخصائي"} value={totals.specialistShare} highlight />
+          <StatCard icon={<TrendingUp className="h-5 w-5" />} label={isAdmin ? "نصيب الأخصائيين" : "نصيبك"} value={totals.specialistShare} highlight />
           <StatCard icon={<Clock className="h-5 w-5" />} label="نصيب المركز" value={totals.centerShare} />
         </div>
+
+        {/* Admin appointments overview */}
+        {isAdmin && adminDayAppointments.length > 0 && (
+          <Card className="shadow-[var(--shadow-card)]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <CalendarClock className="h-4 w-4 text-primary" />
+                مواعيد اليوم (جدول الأخصائيين)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {adminDayAppointments.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold">{a.case_name}</span>
+                        {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
+                        <span className="text-xs text-muted-foreground">— {profilesMap[a.specialist_id] || "—"}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1" dir="ltr">
+                        {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => removeAppointment(a.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Sessions */}
         {loading ? (
           <p className="py-8 text-center text-muted-foreground">جارٍ التحميل...</p>
         ) : dayRows.length === 0 ? (
           <Card className="shadow-[var(--shadow-card)]">
-            <CardContent className="py-12 text-center text-muted-foreground">لا توجد جلسات في هذا اليوم</CardContent>
+            <CardContent className="py-12 text-center text-muted-foreground">لا توجد جلسات مسجَّلة في هذا اليوم</CardContent>
           </Card>
         ) : isAdmin ? (
           <div className="space-y-4">
@@ -277,7 +492,7 @@ export function Dashboard({ user }: { user: User }) {
           </div>
         ) : (
           <Card className="shadow-[var(--shadow-card)]">
-            <CardHeader><CardTitle className="text-lg">جلسات اليوم</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg">الجلسات المسجَّلة</CardTitle></CardHeader>
             <CardContent>
               <SessionsTable rows={dayRows} onPercentage={updatePercentage} onRemove={removeSession} totals={totals} />
             </CardContent>
@@ -302,6 +517,7 @@ function SessionsTable({
         <thead className="border-b text-right text-muted-foreground">
           <tr>
             <th className="py-3 pr-2 font-medium">الحالة</th>
+            <th className="py-3 px-2 font-medium">النوع</th>
             <th className="py-3 px-2 font-medium">الوقت</th>
             <th className="py-3 px-2 font-medium">المدة</th>
             <th className="py-3 px-2 font-medium">التكلفة</th>
@@ -316,6 +532,7 @@ function SessionsTable({
             return (
               <tr key={s.id} className="hover:bg-muted/40 transition-colors">
                 <td className="py-3 pr-2 font-medium">{s.case_name}</td>
+                <td className="py-3 px-2 text-muted-foreground">{s.session_type || "—"}</td>
                 <td className="py-3 px-2 text-muted-foreground" dir="ltr">{s.session_time.slice(0, 5)}</td>
                 <td className="py-3 px-2 text-muted-foreground">{s.duration_minutes} د</td>
                 <td className="py-3 px-2">{Number(s.cost).toFixed(2)}</td>
@@ -323,9 +540,7 @@ function SessionsTable({
                   <Select value={String(s.specialist_percentage)} onValueChange={(v) => onPercentage(s.id, +v)}>
                     <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {PERCENTAGE_OPTIONS.map((p) => (
-                        <SelectItem key={p} value={String(p)}>{p}%</SelectItem>
-                      ))}
+                      {PERCENTAGE_OPTIONS.map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </td>
@@ -342,7 +557,7 @@ function SessionsTable({
         {totals && (
           <tfoot className="border-t-2 font-semibold">
             <tr>
-              <td className="py-3 pr-2" colSpan={3}>المجموع</td>
+              <td className="py-3 pr-2" colSpan={4}>المجموع</td>
               <td className="py-3 px-2">{totals.totalCost.toFixed(2)}</td>
               <td className="py-3 px-2"></td>
               <td className="py-3 px-2 text-primary">{totals.specialistShare.toFixed(2)}</td>
