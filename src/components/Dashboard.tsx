@@ -56,6 +56,8 @@ type Appointment = {
   status: string;
   started_at: string | null;
   ended_at: string | null;
+  session_kind: SessionKind;
+  case_id: string | null;
 };
 
 type Profile = { id: string; full_name: string };
