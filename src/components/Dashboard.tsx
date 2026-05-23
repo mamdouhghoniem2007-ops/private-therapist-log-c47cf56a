@@ -25,6 +25,8 @@ type Session = {
   specialist_percentage: number;
   session_type: string | null;
   test_type: string | null;
+  notes: string | null;
+
 };
 
 type Appointment = {
