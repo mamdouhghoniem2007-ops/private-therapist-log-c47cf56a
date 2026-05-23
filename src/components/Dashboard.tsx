@@ -372,7 +372,7 @@ export function Dashboard({ user }: { user: User }) {
                 ) : (
                   <div className="space-y-2">
                     {myDayAppointments.map((a) => (
-                      <AppointmentRow key={a.id} a={a} actionLabel="تسجيل" onAction={() => useAppointment(a)} />
+                      <AppointmentRow key={a.id} a={a} actionLabel="تسجيل" onAction={() => useAppointment(a)} onCancel={a.status !== "cancelled" ? () => markAppointmentCancelled(a.id) : undefined} />
                     ))}
                   </div>
                 )}
