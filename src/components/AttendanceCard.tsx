@@ -308,6 +308,33 @@ export function AttendanceCard({
             )}
           </div>
         )}
+
+        {/* Specialist: personal history */}
+        {!canViewAll && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">سجلاتي السابقة ({myHistory.length})</p>
+            {loading ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">جارٍ التحميل...</p>
+            ) : myHistory.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">لا توجد سجلات حضور</p>
+            ) : (
+              <div className="divide-y rounded-md border max-h-80 overflow-auto">
+                {myHistory.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between gap-3 p-3 text-sm">
+                    <p className="font-medium">{r.work_date}</p>
+                    <div className="text-xs text-muted-foreground flex gap-3 flex-wrap">
+                      <span>حضور: <b className="text-foreground">{fmtTime(r.check_in)}</b></span>
+                      <span>انصراف: <b className="text-foreground">{fmtTime(r.check_out)}</b></span>
+                      {diffHours(r.check_in, r.check_out) && (
+                        <span>المدة: <b className="text-foreground">{diffHours(r.check_in, r.check_out)}</b></span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
