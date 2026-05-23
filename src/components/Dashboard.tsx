@@ -605,8 +605,8 @@ export function Dashboard({ user }: { user: User }) {
             <CalendarDays className="h-5 w-5 text-primary" />
             <Label className="text-sm">عرض يوم:</Label>
             <Input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="w-auto" />
-            {isAdmin && dayRows.length > 0 && (
-              <Button type="button" size="sm" variant="outline" onClick={downloadDailySheet}>
+            {isAdmin && (
+              <Button type="button" size="sm" variant="outline" onClick={downloadDailySheet} disabled={dayRows.length === 0}>
                 <Download className="h-4 w-4 ml-1" />
                 تنزيل شيت اليوم
               </Button>
