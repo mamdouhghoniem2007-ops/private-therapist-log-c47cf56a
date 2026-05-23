@@ -327,6 +327,44 @@ export function Dashboard({ user }: { user: User }) {
       .map(([id, name]) => ({ id, name, role: (allRoles[id] || "specialist") as Role }));
   }, [profilesMap, allRoles, user.id]);
 
+  const downloadDailySheet = () => {
+    const headers = ["التاريخ", "الوقت", "الأخصائي", "اسم الحالة", "نوع الجلسة", "نوع الاختبار", "المدة (دقيقة)", "التكلفة", "نسبة الأخصائي %", "نصيب الأخصائي", "نصيب المركز", "ملاحظات"];
+    const esc = (v: any) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = dayRows.map((s) => {
+      const cost = Number(s.cost);
+      const share = (cost * Number(s.specialist_percentage)) / 100;
+      return [
+        s.session_date,
+        s.session_time?.slice(0, 5) || "",
+        profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—"),
+        s.case_name,
+        s.session_type || "",
+        s.test_type || "",
+        s.duration_minutes,
+        cost.toFixed(2),
+        s.specialist_percentage,
+        share.toFixed(2),
+        (cost - share).toFixed(2),
+        (s.notes || "").replace(/\n/g, " "),
+      ].map(esc).join(",");
+    });
+    const totalRow = ["", "", "", "", "", "", "الإجمالي", totals.totalCost.toFixed(2), "", totals.specialistShare.toFixed(2), totals.centerShare.toFixed(2), ""].map(esc).join(",");
+    const csv = "\uFEFF" + [headers.map(esc).join(","), ...rows, totalRow].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `جلسات-${filterDate}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("تم تنزيل الشيت اليومي");
+  };
+
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-10">
