@@ -72,10 +72,17 @@ export function AuthForm() {
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
             {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="name">الاسم الكامل</Label>
-                <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="أ. محمد علي" />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="name">الاسم الكامل</Label>
+                  <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="أ. محمد علي" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp">رقم WhatsApp</Label>
+                  <Input id="whatsapp" required value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+201234567890" dir="ltr" />
+                  <p className="text-[11px] text-muted-foreground">يُستخدم لإرسال إشعارات الجدول اليومي والاعتذارات.</p>
+                </div>
+              </>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">البريد الإلكتروني</Label>
