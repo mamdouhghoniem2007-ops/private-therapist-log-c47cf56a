@@ -41,6 +41,8 @@ type Appointment = {
   cost: number | null;
   specialist_percentage: number;
   notes: string | null;
+  case_whatsapp: string | null;
+  status: string;
 };
 
 type Profile = { id: string; full_name: string };
