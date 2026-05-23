@@ -657,27 +657,62 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove,
+  a, subtitle, actionLabel, onAction, onRemove, onCostChange, onPercentageChange,
 }: {
   a: Appointment;
   subtitle?: string;
   actionLabel?: string;
   onAction?: () => void;
   onRemove?: () => void;
+  onCostChange?: (v: number) => void;
+  onPercentageChange?: (v: number) => void;
 }) {
+  const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
+  useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
+  const share = a.cost != null ? (Number(a.cost) * Number(a.specialist_percentage)) / 100 : null;
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+    <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3 flex-wrap">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold">{a.case_name}</span>
           {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
+          {a.test_type && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary">{a.test_type}</span>}
           {subtitle && <span className="text-xs text-muted-foreground">— {subtitle}</span>}
         </div>
         <p className="text-xs text-muted-foreground mt-1" dir="ltr">
           {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
+          {a.cost != null && !onCostChange && <span dir="rtl"> · تكلفة: {Number(a.cost).toFixed(2)}</span>}
+          {!onPercentageChange && <span dir="rtl"> · نسبة: {a.specialist_percentage}%</span>}
+          {share != null && <span dir="rtl"> · نصيب الأخصائي: {share.toFixed(2)}</span>}
           {a.notes && <span dir="rtl"> · {a.notes}</span>}
         </p>
       </div>
+      {onCostChange && (
+        <div className="flex items-center gap-1">
+          <Label className="text-xs text-muted-foreground">تكلفة</Label>
+          <Input
+            type="number" min={0} step="0.01"
+            className="h-8 w-24"
+            value={costDraft}
+            onChange={(e) => setCostDraft(e.target.value)}
+            onBlur={() => {
+              const v = costDraft === "" ? NaN : Number(costDraft);
+              if (!Number.isNaN(v) && v !== Number(a.cost)) onCostChange(v);
+            }}
+          />
+        </div>
+      )}
+      {onPercentageChange && (
+        <div className="flex items-center gap-1">
+          <Label className="text-xs text-muted-foreground">نسبة</Label>
+          <Select value={String(a.specialist_percentage)} onValueChange={(v) => onPercentageChange(+v)}>
+            <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {PERCENTAGE_OPTIONS.map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       {actionLabel && onAction && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
       )}
@@ -689,6 +724,7 @@ function AppointmentRow({
     </div>
   );
 }
+
 
 function SessionsTable({
   rows, onPercentage, onRemove, totals,
