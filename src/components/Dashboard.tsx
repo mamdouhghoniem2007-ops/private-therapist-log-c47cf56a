@@ -542,11 +542,15 @@ export function Dashboard({ user }: { user: User }) {
                     </div>
                   </>
                 )}
-                <div className="space-y-2 lg:col-span-3">
+                <div className="space-y-2 lg:col-span-2">
+                  <Label>رقم WhatsApp للحالة</Label>
+                  <Input value={aCaseWhatsapp} onChange={(e) => setACaseWhatsapp(e.target.value)} placeholder="+201234567890" dir="ltr" />
+                </div>
+                <div className="space-y-2 lg:col-span-2">
                   <Label>ملاحظات (اختياري)</Label>
                   <Input value={aNotes} onChange={(e) => setANotes(e.target.value)} placeholder="..." />
                 </div>
-                <div className="lg:col-span-3 flex items-end">
+                <div className="lg:col-span-2 flex items-end">
                   <Button type="submit" disabled={aSubmitting} className="w-full lg:w-auto">
                     {aSubmitting ? "جارٍ الحفظ..." : "إضافة للجدول"}
                   </Button>
