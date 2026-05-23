@@ -428,11 +428,21 @@ export function Dashboard({ user }: { user: User }) {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="sm:col-span-2 lg:col-span-5 flex items-end">
+                  <div className="space-y-2 sm:col-span-2 lg:col-span-6">
+                    <Label>ما تم خلال الجلسة</Label>
+                    <Textarea
+                      value={sNotes}
+                      onChange={(e) => setSNotes(e.target.value)}
+                      placeholder="اكتب باختصار ما تم مع الحالة خلال الجلسة (الأنشطة، الملاحظات، التقدم...)"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="sm:col-span-2 lg:col-span-6 flex items-end">
                     <Button type="submit" disabled={submitting} className="w-full lg:w-auto">
                       {submitting ? "جارٍ الحفظ..." : "إضافة الجلسة"}
                     </Button>
                   </div>
+
                 </form>
               </CardContent>
             </Card>
