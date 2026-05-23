@@ -172,6 +172,7 @@ export function Dashboard({ user }: { user: User }) {
       cost: Number(cost),
       specialist_percentage: percentage,
       session_type: sType,
+      test_type: sType === TESTS_LABEL ? sTestType : null,
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
@@ -191,13 +192,16 @@ export function Dashboard({ user }: { user: User }) {
       scheduled_time: aTime,
       duration_minutes: aDuration,
       session_type: aType,
+      test_type: aType === TESTS_LABEL ? aTestType : null,
+      cost: aCost === "" ? null : Number(aCost),
+      specialist_percentage: aPercentage,
       notes: aNotes.trim() || null,
       created_by: user.id,
     });
     setASubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تم إضافة الموعد للجدول");
-    setACase(""); setANotes("");
+    setACase(""); setANotes(""); setACost("");
     loadAll();
   };
 
@@ -208,12 +212,27 @@ export function Dashboard({ user }: { user: User }) {
     toast.success("تم حذف الموعد");
   };
 
+  const updateAppointmentCost = async (id: string, value: number) => {
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, cost: value } : x)));
+    const { error } = await supabase.from("appointments").update({ cost: value }).eq("id", id);
+    if (error) toast.error(error.message);
+  };
+
+  const updateAppointmentPercentage = async (id: string, value: number) => {
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, specialist_percentage: value } : x)));
+    const { error } = await supabase.from("appointments").update({ specialist_percentage: value }).eq("id", id);
+    if (error) toast.error(error.message);
+  };
+
   const useAppointment = (a: Appointment) => {
     setCaseName(a.case_name);
     setSDate(a.scheduled_date);
     setSTime(a.scheduled_time.slice(0, 5));
     setDuration(a.duration_minutes);
     if (a.session_type) setSType(a.session_type);
+    if (a.test_type) setSTestType(a.test_type);
+    if (a.cost != null) setCost(Number(a.cost));
+    if (a.specialist_percentage != null) setPercentage(Number(a.specialist_percentage));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -229,6 +248,7 @@ export function Dashboard({ user }: { user: User }) {
     const { error } = await supabase.from("sessions").update({ specialist_percentage: value }).eq("id", id);
     if (error) toast.error(error.message);
   };
+
 
   // Admin role management
   const changeUserRole = async (userId: string, newRole: Role) => {
