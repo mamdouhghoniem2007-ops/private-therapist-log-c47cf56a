@@ -212,13 +212,25 @@ export function Dashboard({ user }: { user: User }) {
       cost: aCost === "" ? null : Number(aCost),
       specialist_percentage: aPercentage,
       notes: aNotes.trim() || null,
+      case_whatsapp: aCaseWhatsapp.trim() || null,
       created_by: user.id,
     });
     setASubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تم إضافة الموعد للجدول");
-    setACase(""); setANotes(""); setACost("");
+    setACase(""); setANotes(""); setACost(""); setACaseWhatsapp("");
     loadAll();
+  };
+
+  const markAppointmentCancelled = async (id: string) => {
+    const { error } = await supabase.from("appointments").update({ status: "cancelled" }).eq("id", id);
+    if (error) return toast.error(error.message);
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, status: "cancelled" } : x)));
+    const appt = appointments.find((x) => x.id === id);
+    toast.success("تم تسجيل اعتذار الحالة", {
+      description: appt ? `${appt.case_name} · ${appt.scheduled_date} ${appt.scheduled_time.slice(0,5)} — سيصل إشعار للأخصائي.` : undefined,
+      duration: 6000,
+    });
   };
 
   const removeAppointment = async (id: string) => {
