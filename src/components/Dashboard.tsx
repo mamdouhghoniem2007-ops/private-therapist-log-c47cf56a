@@ -662,6 +662,11 @@ export function Dashboard({ user }: { user: User }) {
           </Card>
         )}
 
+        {/* Attendance — all roles */}
+        <AttendanceCard user={user} role={role} profilesMap={profilesMap} allRoles={allRoles} />
+
+
+
         {/* Admin: role management */}
         {isAdmin && (
           <Card className="shadow-[var(--shadow-card)]">
