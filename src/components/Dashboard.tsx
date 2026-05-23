@@ -44,6 +44,8 @@ type Appointment = {
   notes: string | null;
   case_whatsapp: string | null;
   status: string;
+  started_at: string | null;
+  ended_at: string | null;
 };
 
 type Profile = { id: string; full_name: string };
@@ -241,6 +243,22 @@ export function Dashboard({ user }: { user: User }) {
     toast.success("تم حذف الموعد");
   };
 
+  const startAppointment = async (id: string) => {
+    const now = new Date().toISOString();
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, started_at: now } : x)));
+    const { error } = await supabase.from("appointments").update({ started_at: now }).eq("id", id);
+    if (error) toast.error(error.message);
+    else toast.success("تم تسجيل بداية الجلسة");
+  };
+
+  const endAppointment = async (id: string) => {
+    const now = new Date().toISOString();
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, ended_at: now } : x)));
+    const { error } = await supabase.from("appointments").update({ ended_at: now }).eq("id", id);
+    if (error) toast.error(error.message);
+    else toast.success("تم تسجيل نهاية الجلسة");
+  };
+
   const updateAppointmentCost = async (id: string, value: number) => {
     setAppointments((a) => a.map((x) => (x.id === id ? { ...x, cost: value } : x)));
     const { error } = await supabase.from("appointments").update({ cost: value }).eq("id", id);
@@ -328,42 +346,102 @@ export function Dashboard({ user }: { user: User }) {
       .map(([id, name]) => ({ id, name, role: (allRoles[id] || "specialist") as Role }));
   }, [profilesMap, allRoles, user.id]);
 
-  const downloadDailySheet = () => {
-    const headers = ["التاريخ", "الوقت", "الأخصائي", "اسم الحالة", "نوع الجلسة", "نوع الاختبار", "المدة (دقيقة)", "التكلفة", "نسبة الأخصائي %", "نصيب الأخصائي", "نصيب المركز", "ملاحظات"];
-    const esc = (v: any) => {
-      const s = v == null ? "" : String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const rows = dayRows.map((s) => {
-      const cost = Number(s.cost);
-      const share = (cost * Number(s.specialist_percentage)) / 100;
-      return [
-        s.session_date,
-        s.session_time?.slice(0, 5) || "",
-        profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—"),
-        s.case_name,
-        s.session_type || "",
-        s.test_type || "",
-        s.duration_minutes,
-        cost.toFixed(2),
-        s.specialist_percentage,
-        share.toFixed(2),
-        (cost - share).toFixed(2),
-        (s.notes || "").replace(/\n/g, " "),
-      ].map(esc).join(",");
-    });
-    const totalRow = ["", "", "", "", "", "", "الإجمالي", totals.totalCost.toFixed(2), "", totals.specialistShare.toFixed(2), totals.centerShare.toFixed(2), ""].map(esc).join(",");
-    const csv = "\uFEFF" + [headers.map(esc).join(","), ...rows, totalRow].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const esc = (v: any) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const triggerDownload = (filename: string, csv: string) => {
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `جلسات-${filterDate}.csv`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+  const fmtT = (ts: string | null | undefined) =>
+    ts ? new Date(ts).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : "";
+
+  // Map appointment start/end to a session via (specialist_id + case_name + date)
+  const apptMap = useMemo(() => {
+    const m: Record<string, Appointment> = {};
+    for (const a of appointments) m[`${a.specialist_id}|${a.case_name}|${a.scheduled_date}`] = a;
+    return m;
+  }, [appointments]);
+
+  const sessionRowCsv = (s: Session) => {
+    const cost = Number(s.cost);
+    const share = (cost * Number(s.specialist_percentage)) / 100;
+    const a = apptMap[`${s.specialist_id}|${s.case_name}|${s.session_date}`];
+    return [
+      s.session_date,
+      s.session_time?.slice(0, 5) || "",
+      fmtT(a?.started_at),
+      fmtT(a?.ended_at),
+      profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—"),
+      s.case_name,
+      s.session_type || "",
+      s.test_type || "",
+      s.duration_minutes,
+      cost.toFixed(2),
+      s.specialist_percentage,
+      share.toFixed(2),
+      (cost - share).toFixed(2),
+      (s.notes || "").replace(/\n/g, " "),
+    ].map(esc).join(",");
+  };
+  const sessionHeaders = ["التاريخ", "الوقت المجدول", "بداية الجلسة", "نهاية الجلسة", "الأخصائي", "اسم الحالة", "نوع الجلسة", "نوع الاختبار", "المدة (دقيقة)", "التكلفة", "نسبة الأخصائي %", "نصيب الأخصائي", "نصيب المركز", "ملاحظات"];
+
+  const downloadDailySheet = () => {
+    const rows = dayRows.map(sessionRowCsv);
+    const totalRow = ["", "", "", "", "", "", "", "", "الإجمالي", totals.totalCost.toFixed(2), "", totals.specialistShare.toFixed(2), totals.centerShare.toFixed(2), ""].map(esc).join(",");
+    triggerDownload(`جلسات-${filterDate}.csv`, [sessionHeaders.map(esc).join(","), ...rows, totalRow].join("\n"));
     toast.success("تم تنزيل الشيت اليومي");
+  };
+
+  const downloadMonthlySheet = async () => {
+    const [y, m] = filterDate.split("-").map(Number);
+    const first = `${y}-${String(m).padStart(2, "0")}-01`;
+    const last = new Date(y, m, 0).toISOString().slice(0, 10);
+    const { data, error } = await supabase
+      .from("sessions").select("*")
+      .gte("session_date", first).lte("session_date", last)
+      .order("session_date").order("session_time");
+    if (error) return toast.error(error.message);
+    const monthRows = ((data as Session[]) || []);
+    const rows = monthRows.map(sessionRowCsv);
+    const totalCost = monthRows.reduce((sum, s) => sum + Number(s.cost), 0);
+    const specShare = monthRows.reduce((sum, s) => sum + (Number(s.cost) * Number(s.specialist_percentage)) / 100, 0);
+    const totalRow = ["", "", "", "", "", "", "", "", "الإجمالي", totalCost.toFixed(2), "", specShare.toFixed(2), (totalCost - specShare).toFixed(2), ""].map(esc).join(",");
+
+    // Summary per specialist
+    const sum: Record<string, { name: string; count: number; total: number; share: number }> = {};
+    for (const s of monthRows) {
+      const name = profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—");
+      if (!sum[s.specialist_id]) sum[s.specialist_id] = { name, count: 0, total: 0, share: 0 };
+      const c = Number(s.cost);
+      sum[s.specialist_id].count += 1;
+      sum[s.specialist_id].total += c;
+      sum[s.specialist_id].share += (c * Number(s.specialist_percentage)) / 100;
+    }
+    const sumLines = [
+      ["الأخصائي", "عدد الجلسات", "الإجمالي", "نصيب الأخصائي", "نصيب المركز"].map(esc).join(","),
+      ...Object.values(sum).map((g) => [g.name, g.count, g.total.toFixed(2), g.share.toFixed(2), (g.total - g.share).toFixed(2)].map(esc).join(",")),
+    ];
+
+    const csv = [
+      `ملخص شهر ${y}-${String(m).padStart(2, "0")}`,
+      ...sumLines,
+      "",
+      "التفاصيل",
+      sessionHeaders.map(esc).join(","),
+      ...rows,
+      totalRow,
+    ].join("\n");
+    triggerDownload(`جلسات-${y}-${String(m).padStart(2, "0")}.csv`, csv);
+    toast.success("تم تنزيل الشيت الشهري");
   };
 
   return (
@@ -411,7 +489,15 @@ export function Dashboard({ user }: { user: User }) {
                 ) : (
                   <div className="space-y-2">
                     {myDayAppointments.map((a) => (
-                      <AppointmentRow key={a.id} a={a} actionLabel="تسجيل" onAction={() => useAppointment(a)} onCancel={a.status !== "cancelled" ? () => markAppointmentCancelled(a.id) : undefined} />
+                      <AppointmentRow
+                        key={a.id}
+                        a={a}
+                        actionLabel="تسجيل"
+                        onAction={() => useAppointment(a)}
+                        onStart={() => startAppointment(a.id)}
+                        onEnd={() => endAppointment(a.id)}
+                        onCancel={a.status !== "cancelled" ? () => markAppointmentCancelled(a.id) : undefined}
+                      />
                     ))}
                   </div>
                 )}
@@ -607,10 +693,16 @@ export function Dashboard({ user }: { user: User }) {
             <Label className="text-sm">عرض يوم:</Label>
             <Input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="w-auto" />
             {isAdmin && (
-              <Button type="button" size="sm" variant="outline" onClick={downloadDailySheet} disabled={dayRows.length === 0}>
-                <Download className="h-4 w-4 ml-1" />
-                تنزيل شيت اليوم
-              </Button>
+              <>
+                <Button type="button" size="sm" variant="outline" onClick={downloadDailySheet} disabled={dayRows.length === 0}>
+                  <Download className="h-4 w-4 ml-1" />
+                  شيت اليوم
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={downloadMonthlySheet}>
+                  <Download className="h-4 w-4 ml-1" />
+                  شيت الشهر
+                </Button>
+              </>
             )}
           </div>
           <p className="text-sm text-muted-foreground">
@@ -750,7 +842,7 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial,
+  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd,
 }: {
   a: Appointment;
   subtitle?: string;
@@ -761,23 +853,32 @@ function AppointmentRow({
   onCostChange?: (v: number) => void;
   onPercentageChange?: (v: number) => void;
   hideFinancial?: boolean;
+  onStart?: () => void;
+  onEnd?: () => void;
 }) {
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
   const share = a.cost != null ? (Number(a.cost) * Number(a.specialist_percentage)) / 100 : null;
   const isCancelled = a.status === "cancelled";
+  const fmtT = (ts: string | null) => ts ? new Date(ts).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : null;
+  const startedTxt = fmtT(a.started_at);
+  const endedTxt = fmtT(a.ended_at);
   return (
     <div className={`flex items-center justify-between gap-3 rounded-lg border p-3 flex-wrap ${isCancelled ? "bg-destructive/5 border-destructive/30" : "bg-muted/30"}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`font-semibold ${isCancelled ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
           {isCancelled && <span className="text-xs rounded bg-destructive/15 px-2 py-0.5 text-destructive font-semibold">اعتذرت</span>}
+          {startedTxt && !endedTxt && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary font-semibold">جارية</span>}
+          {endedTxt && <span className="text-xs rounded bg-emerald-500/15 px-2 py-0.5 text-emerald-600 font-semibold">منتهية</span>}
           {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
           {a.test_type && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary">{a.test_type}</span>}
           {subtitle && <span className="text-xs text-muted-foreground">— {subtitle}</span>}
         </div>
         <p className="text-xs text-muted-foreground mt-1" dir="ltr">
           {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
+          {startedTxt && <span dir="rtl"> · بدأت: {startedTxt}</span>}
+          {endedTxt && <span dir="rtl"> · انتهت: {endedTxt}</span>}
           {!hideFinancial && a.cost != null && !onCostChange && <span dir="rtl"> · تكلفة: {Number(a.cost).toFixed(2)}</span>}
           {!hideFinancial && !onPercentageChange && <span dir="rtl"> · نسبة: {a.specialist_percentage}%</span>}
           {!hideFinancial && share != null && <span dir="rtl"> · نصيب الأخصائي: {share.toFixed(2)}</span>}
@@ -809,6 +910,12 @@ function AppointmentRow({
             </SelectContent>
           </Select>
         </div>
+      )}
+      {onStart && !isCancelled && !a.started_at && (
+        <Button size="sm" variant="default" onClick={onStart}>بدء الجلسة</Button>
+      )}
+      {onEnd && !isCancelled && a.started_at && !a.ended_at && (
+        <Button size="sm" variant="secondary" onClick={onEnd}>إنهاء الجلسة</Button>
       )}
       {actionLabel && onAction && !isCancelled && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
