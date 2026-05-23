@@ -346,42 +346,102 @@ export function Dashboard({ user }: { user: User }) {
       .map(([id, name]) => ({ id, name, role: (allRoles[id] || "specialist") as Role }));
   }, [profilesMap, allRoles, user.id]);
 
-  const downloadDailySheet = () => {
-    const headers = ["التاريخ", "الوقت", "الأخصائي", "اسم الحالة", "نوع الجلسة", "نوع الاختبار", "المدة (دقيقة)", "التكلفة", "نسبة الأخصائي %", "نصيب الأخصائي", "نصيب المركز", "ملاحظات"];
-    const esc = (v: any) => {
-      const s = v == null ? "" : String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const rows = dayRows.map((s) => {
-      const cost = Number(s.cost);
-      const share = (cost * Number(s.specialist_percentage)) / 100;
-      return [
-        s.session_date,
-        s.session_time?.slice(0, 5) || "",
-        profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—"),
-        s.case_name,
-        s.session_type || "",
-        s.test_type || "",
-        s.duration_minutes,
-        cost.toFixed(2),
-        s.specialist_percentage,
-        share.toFixed(2),
-        (cost - share).toFixed(2),
-        (s.notes || "").replace(/\n/g, " "),
-      ].map(esc).join(",");
-    });
-    const totalRow = ["", "", "", "", "", "", "الإجمالي", totals.totalCost.toFixed(2), "", totals.specialistShare.toFixed(2), totals.centerShare.toFixed(2), ""].map(esc).join(",");
-    const csv = "\uFEFF" + [headers.map(esc).join(","), ...rows, totalRow].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const esc = (v: any) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const triggerDownload = (filename: string, csv: string) => {
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `جلسات-${filterDate}.csv`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+  const fmtT = (ts: string | null | undefined) =>
+    ts ? new Date(ts).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : "";
+
+  // Map appointment start/end to a session via (specialist_id + case_name + date)
+  const apptMap = useMemo(() => {
+    const m: Record<string, Appointment> = {};
+    for (const a of appointments) m[`${a.specialist_id}|${a.case_name}|${a.scheduled_date}`] = a;
+    return m;
+  }, [appointments]);
+
+  const sessionRowCsv = (s: Session) => {
+    const cost = Number(s.cost);
+    const share = (cost * Number(s.specialist_percentage)) / 100;
+    const a = apptMap[`${s.specialist_id}|${s.case_name}|${s.session_date}`];
+    return [
+      s.session_date,
+      s.session_time?.slice(0, 5) || "",
+      fmtT(a?.started_at),
+      fmtT(a?.ended_at),
+      profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—"),
+      s.case_name,
+      s.session_type || "",
+      s.test_type || "",
+      s.duration_minutes,
+      cost.toFixed(2),
+      s.specialist_percentage,
+      share.toFixed(2),
+      (cost - share).toFixed(2),
+      (s.notes || "").replace(/\n/g, " "),
+    ].map(esc).join(",");
+  };
+  const sessionHeaders = ["التاريخ", "الوقت المجدول", "بداية الجلسة", "نهاية الجلسة", "الأخصائي", "اسم الحالة", "نوع الجلسة", "نوع الاختبار", "المدة (دقيقة)", "التكلفة", "نسبة الأخصائي %", "نصيب الأخصائي", "نصيب المركز", "ملاحظات"];
+
+  const downloadDailySheet = () => {
+    const rows = dayRows.map(sessionRowCsv);
+    const totalRow = ["", "", "", "", "", "", "", "", "الإجمالي", totals.totalCost.toFixed(2), "", totals.specialistShare.toFixed(2), totals.centerShare.toFixed(2), ""].map(esc).join(",");
+    triggerDownload(`جلسات-${filterDate}.csv`, [sessionHeaders.map(esc).join(","), ...rows, totalRow].join("\n"));
     toast.success("تم تنزيل الشيت اليومي");
+  };
+
+  const downloadMonthlySheet = async () => {
+    const [y, m] = filterDate.split("-").map(Number);
+    const first = `${y}-${String(m).padStart(2, "0")}-01`;
+    const last = new Date(y, m, 0).toISOString().slice(0, 10);
+    const { data, error } = await supabase
+      .from("sessions").select("*")
+      .gte("session_date", first).lte("session_date", last)
+      .order("session_date").order("session_time");
+    if (error) return toast.error(error.message);
+    const monthRows = ((data as Session[]) || []);
+    const rows = monthRows.map(sessionRowCsv);
+    const totalCost = monthRows.reduce((sum, s) => sum + Number(s.cost), 0);
+    const specShare = monthRows.reduce((sum, s) => sum + (Number(s.cost) * Number(s.specialist_percentage)) / 100, 0);
+    const totalRow = ["", "", "", "", "", "", "", "", "الإجمالي", totalCost.toFixed(2), "", specShare.toFixed(2), (totalCost - specShare).toFixed(2), ""].map(esc).join(",");
+
+    // Summary per specialist
+    const sum: Record<string, { name: string; count: number; total: number; share: number }> = {};
+    for (const s of monthRows) {
+      const name = profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—");
+      if (!sum[s.specialist_id]) sum[s.specialist_id] = { name, count: 0, total: 0, share: 0 };
+      const c = Number(s.cost);
+      sum[s.specialist_id].count += 1;
+      sum[s.specialist_id].total += c;
+      sum[s.specialist_id].share += (c * Number(s.specialist_percentage)) / 100;
+    }
+    const sumLines = [
+      ["الأخصائي", "عدد الجلسات", "الإجمالي", "نصيب الأخصائي", "نصيب المركز"].map(esc).join(","),
+      ...Object.values(sum).map((g) => [g.name, g.count, g.total.toFixed(2), g.share.toFixed(2), (g.total - g.share).toFixed(2)].map(esc).join(",")),
+    ];
+
+    const csv = [
+      `ملخص شهر ${y}-${String(m).padStart(2, "0")}`,
+      ...sumLines,
+      "",
+      "التفاصيل",
+      sessionHeaders.map(esc).join(","),
+      ...rows,
+      totalRow,
+    ].join("\n");
+    triggerDownload(`جلسات-${y}-${String(m).padStart(2, "0")}.csv`, csv);
+    toast.success("تم تنزيل الشيت الشهري");
   };
 
   return (
