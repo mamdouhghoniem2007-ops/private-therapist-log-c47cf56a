@@ -81,6 +81,7 @@ export function Dashboard({ user }: { user: User }) {
   const [sTime, setSTime] = useState("10:00");
   const [duration, setDuration] = useState(45);
   const [sType, setSType] = useState(SESSION_TYPES[0]);
+  const [sTestType, setSTestType] = useState(TEST_TYPES[0]);
   const [cost, setCost] = useState<number | "">("");
   const [percentage, setPercentage] = useState(50);
   const [submitting, setSubmitting] = useState(false);
@@ -92,8 +93,12 @@ export function Dashboard({ user }: { user: User }) {
   const [aTime, setATime] = useState("10:00");
   const [aDuration, setADuration] = useState(45);
   const [aType, setAType] = useState(SESSION_TYPES[0]);
+  const [aTestType, setATestType] = useState(TEST_TYPES[0]);
+  const [aCost, setACost] = useState<number | "">("");
+  const [aPercentage, setAPercentage] = useState(50);
   const [aNotes, setANotes] = useState("");
   const [aSubmitting, setASubmitting] = useState(false);
+
 
   const isAdmin = role === "admin";
   const isSupervisor = role === "supervisor";
