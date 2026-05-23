@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog } from "lucide-react";
@@ -23,6 +25,8 @@ type Session = {
   specialist_percentage: number;
   session_type: string | null;
   test_type: string | null;
+  notes: string | null;
+
 };
 
 type Appointment = {
@@ -84,6 +88,8 @@ export function Dashboard({ user }: { user: User }) {
   const [sTestType, setSTestType] = useState(TEST_TYPES[0]);
   const [cost, setCost] = useState<number | "">("");
   const [percentage, setPercentage] = useState(50);
+  const [sNotes, setSNotes] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
 
   // appointment form (admin / supervisor)
@@ -173,13 +179,20 @@ export function Dashboard({ user }: { user: User }) {
       specialist_percentage: percentage,
       session_type: sType,
       test_type: sType === TESTS_LABEL ? sTestType : null,
+      notes: sNotes.trim() || null,
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
-    toast.success("تم تسجيل الجلسة");
-    setCaseName(""); setCost("");
+    const savedName = caseName.trim();
+    const typeLabel = sType === TESTS_LABEL ? `${sType} - ${sTestType}` : sType;
+    toast.success("تم تسجيل الجلسة بنجاح ✅", {
+      description: `الحالة: ${savedName} · ${typeLabel} · ${sDate} الساعة ${sTime} · ${duration} دقيقة · التكلفة ${Number(cost).toFixed(2)}`,
+      duration: 6000,
+    });
+    setCaseName(""); setCost(""); setSNotes("");
     loadAll();
   };
+
 
   const addAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -415,11 +428,21 @@ export function Dashboard({ user }: { user: User }) {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="sm:col-span-2 lg:col-span-5 flex items-end">
+                  <div className="space-y-2 sm:col-span-2 lg:col-span-6">
+                    <Label>ما تم خلال الجلسة</Label>
+                    <Textarea
+                      value={sNotes}
+                      onChange={(e) => setSNotes(e.target.value)}
+                      placeholder="اكتب باختصار ما تم مع الحالة خلال الجلسة (الأنشطة، الملاحظات، التقدم...)"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="sm:col-span-2 lg:col-span-6 flex items-end">
                     <Button type="submit" disabled={submitting} className="w-full lg:w-auto">
                       {submitting ? "جارٍ الحفظ..." : "إضافة الجلسة"}
                     </Button>
                   </div>
+
                 </form>
               </CardContent>
             </Card>
@@ -754,7 +777,11 @@ function SessionsTable({
             const share = (Number(s.cost) * Number(s.specialist_percentage)) / 100;
             return (
               <tr key={s.id} className="hover:bg-muted/40 transition-colors">
-                <td className="py-3 pr-2 font-medium">{s.case_name}</td>
+                <td className="py-3 pr-2 font-medium align-top">
+                  {s.case_name}
+                  {s.notes && <p className="mt-1 text-xs text-muted-foreground font-normal whitespace-pre-wrap max-w-xs">{s.notes}</p>}
+                </td>
+
                 <td className="py-3 px-2 text-muted-foreground">{s.session_type || "—"}{s.test_type && <span className="block text-xs text-primary">{s.test_type}</span>}</td>
                 <td className="py-3 px-2 text-muted-foreground" dir="ltr">{s.session_time.slice(0, 5)}</td>
                 <td className="py-3 px-2 text-muted-foreground">{s.duration_minutes} د</td>

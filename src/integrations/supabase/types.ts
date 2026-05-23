@@ -87,6 +87,7 @@ export type Database = {
           created_at: string
           duration_minutes: number
           id: string
+          notes: string | null
           session_date: string
           session_time: string
           session_type: string | null
@@ -100,6 +101,7 @@ export type Database = {
           created_at?: string
           duration_minutes: number
           id?: string
+          notes?: string | null
           session_date: string
           session_time: string
           session_type?: string | null
@@ -113,6 +115,7 @@ export type Database = {
           created_at?: string
           duration_minutes?: number
           id?: string
+          notes?: string | null
           session_date?: string
           session_time?: string
           session_type?: string | null
