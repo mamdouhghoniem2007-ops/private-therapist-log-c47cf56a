@@ -51,7 +51,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
 const TESTS_LABEL = "اختبارات";
-const SESSION_TYPES = ["تخاطب", "تأهيل", "تعديل سلوك", "تنمية مهارات", "صعوبات تعلم", "علاج وظيفي", "تقييم", TESTS_LABEL];
+const SESSION_TYPES = ["تخاطب", "تأهيل", "تأسيس أكاديمي", "تعديل سلوك", "تنمية مهارات", "صعوبات تعلم", "علاج وظيفي", "تقييم", TESTS_LABEL];
 const TEST_TYPES = [
   "IQ ستانفورد بينيه",
   "وكسلر للأطفال",
