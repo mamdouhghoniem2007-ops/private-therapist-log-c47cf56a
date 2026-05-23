@@ -762,6 +762,14 @@ function AppointmentRow({
       {actionLabel && onAction && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
       )}
+      {actionLabel && onAction && !isCancelled && (
+        <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
+      )}
+      {onCancel && !isCancelled && (
+        <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10" onClick={onCancel}>
+          اعتذرت اليوم
+        </Button>
+      )}
       {onRemove && (
         <Button variant="ghost" size="icon" onClick={onRemove}>
           <Trash2 className="h-4 w-4 text-destructive" />
