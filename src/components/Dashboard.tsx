@@ -22,6 +22,7 @@ type Session = {
   cost: number;
   specialist_percentage: number;
   session_type: string | null;
+  test_type: string | null;
 };
 
 type Appointment = {
@@ -32,6 +33,9 @@ type Appointment = {
   scheduled_time: string;
   duration_minutes: number;
   session_type: string | null;
+  test_type: string | null;
+  cost: number | null;
+  specialist_percentage: number;
   notes: string | null;
 };
 
@@ -42,8 +46,22 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
-const SESSION_TYPES = ["تخاطب", "تأهيل", "تعديل سلوك", "تنمية مهارات", "صعوبات تعلم", "علاج وظيفي", "تقييم"];
+const TESTS_LABEL = "اختبارات";
+const SESSION_TYPES = ["تخاطب", "تأهيل", "تعديل سلوك", "تنمية مهارات", "صعوبات تعلم", "علاج وظيفي", "تقييم", TESTS_LABEL];
+const TEST_TYPES = [
+  "IQ ستانفورد بينيه",
+  "وكسلر للأطفال",
+  "مقياس جيليام للتوحد (GARS)",
+  "بورتاج للنمو",
+  "فاينلاند للسلوك التكيفي",
+  "بيبودي للمفردات (PPVT)",
+  "مقياس اللغة المستقبلة والتعبيرية (REEL)",
+  "مقياس فرص الانتباه (Conners)",
+  "اختبار صعوبات التعلم",
+  "تقييم النطق والكلام",
+];
 const ROLE_LABEL: Record<Role, string> = { admin: "مدير", supervisor: "مشرف", specialist: "أخصائي" };
+
 
 export function Dashboard({ user }: { user: User }) {
   const [profileName, setProfileName] = useState<string>("");
