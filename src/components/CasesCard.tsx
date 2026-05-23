@@ -282,33 +282,68 @@ export function CasesCard({
         ) : (
           <div className="divide-y">
             {visibleCases.map((c) => (
-              <div key={c.id} className="py-3 flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`font-semibold ${!c.active ? "text-muted-foreground line-through" : ""}`}>{c.name}</span>
-                    {!c.active && <span className="text-xs rounded bg-muted px-2 py-0.5">موقوفة</span>}
-                    <span className="text-xs text-muted-foreground">— {profilesMap[c.specialist_id] || "—"}</span>
+              <div key={c.id} className="py-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`font-semibold ${!c.active ? "text-muted-foreground line-through" : ""}`}>{c.name}</span>
+                      {!c.active && <span className="text-xs rounded bg-muted px-2 py-0.5">موقوفة</span>}
+                      <span className="text-xs text-muted-foreground">— {profilesMap[c.specialist_id] || "—"}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {c.recurring_days.map((d) => DAY_LABELS[d]).join("، ") || "—"}
+                      <span dir="ltr"> · {c.recurring_time.slice(0, 5)}</span>
+                      {" · "}{c.default_duration_minutes} د
+                      {" · "}{Number(c.default_cost).toFixed(2)} ({c.default_specialist_percentage}%)
+                      {c.whatsapp && <span dir="ltr"> · {c.whatsapp}</span>}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {c.recurring_days.map((d) => DAY_LABELS[d]).join("، ") || "—"}
-                    <span dir="ltr"> · {c.recurring_time.slice(0, 5)}</span>
-                    {" · "}{c.default_duration_minutes} د
-                    {" · "}{Number(c.default_cost).toFixed(2)} ({c.default_specialist_percentage}%)
-                    {c.whatsapp && <span dir="ltr"> · {c.whatsapp}</span>}
-                  </p>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => toggleExpand(c)}>
+                      <Calendar className="h-4 w-4 ml-1" />
+                      المواعيد
+                      {expanded[c.id] ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+                    </Button>
+                    {canManage && (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => regenerate(c)} title="توليد مواعيد 8 أسابيع قادمة">
+                          <RefreshCw className="h-4 w-4 ml-1" />
+                          توليد
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => toggleActive(c)}>
+                          {c.active ? "إيقاف" : "تفعيل"}
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => remove(c)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                {canManage && (
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="outline" onClick={() => regenerate(c)} title="توليد مواعيد 8 أسابيع قادمة">
-                      <RefreshCw className="h-4 w-4 ml-1" />
-                      توليد
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => toggleActive(c)}>
-                      {c.active ? "إيقاف" : "تفعيل"}
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => remove(c)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                {expanded[c.id] && (
+                  <div className="mt-3 rounded-md border bg-muted/30 p-2">
+                    {apptLoading[c.id] ? (
+                      <p className="text-xs text-center text-muted-foreground py-2">جارٍ التحميل...</p>
+                    ) : (appts[c.id]?.length ?? 0) === 0 ? (
+                      <p className="text-xs text-center text-muted-foreground py-2">لا توجد مواعيد قادمة</p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {appts[c.id].map((a) => (
+                          <li key={a.id} className="text-xs flex items-center justify-between gap-2 px-2 py-1 rounded bg-background">
+                            <span>
+                              {new Date(a.scheduled_date).toLocaleDateString("ar-EG", { weekday: "short", day: "2-digit", month: "2-digit" })}
+                              <span dir="ltr"> · {a.scheduled_time.slice(0, 5)}</span>
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="text-muted-foreground">{KIND_LABEL[a.session_kind] || a.session_kind}</span>
+                              {a.status !== "scheduled" && (
+                                <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5">{a.status}</span>
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
               </div>
