@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       appointments: {
         Row: {
+          case_id: string | null
           case_name: string
           case_whatsapp: string | null
           cost: number | null
@@ -27,6 +28,7 @@ export type Database = {
           notes: string | null
           scheduled_date: string
           scheduled_time: string
+          session_kind: string
           session_type: string | null
           specialist_id: string
           specialist_percentage: number
@@ -35,6 +37,7 @@ export type Database = {
           test_type: string | null
         }
         Insert: {
+          case_id?: string | null
           case_name: string
           case_whatsapp?: string | null
           cost?: number | null
@@ -46,6 +49,7 @@ export type Database = {
           notes?: string | null
           scheduled_date: string
           scheduled_time: string
+          session_kind?: string
           session_type?: string | null
           specialist_id: string
           specialist_percentage?: number
@@ -54,6 +58,7 @@ export type Database = {
           test_type?: string | null
         }
         Update: {
+          case_id?: string | null
           case_name?: string
           case_whatsapp?: string | null
           cost?: number | null
@@ -65,6 +70,7 @@ export type Database = {
           notes?: string | null
           scheduled_date?: string
           scheduled_time?: string
+          session_kind?: string
           session_type?: string | null
           specialist_id?: string
           specialist_percentage?: number
@@ -104,6 +110,60 @@ export type Database = {
           updated_at?: string
           user_id?: string
           work_date?: string
+        }
+        Relationships: []
+      }
+      cases: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          default_cost: number
+          default_duration_minutes: number
+          default_specialist_percentage: number
+          id: string
+          name: string
+          notes: string | null
+          recurring_days: number[]
+          recurring_time: string
+          specialist_id: string
+          start_date: string
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          default_cost?: number
+          default_duration_minutes?: number
+          default_specialist_percentage?: number
+          id?: string
+          name: string
+          notes?: string | null
+          recurring_days?: number[]
+          recurring_time: string
+          specialist_id: string
+          start_date?: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          default_cost?: number
+          default_duration_minutes?: number
+          default_specialist_percentage?: number
+          id?: string
+          name?: string
+          notes?: string | null
+          recurring_days?: number[]
+          recurring_time?: string
+          specialist_id?: string
+          start_date?: string
+          updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -199,6 +259,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_case_appointments: {
+        Args: { _case_id: string; _until: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
