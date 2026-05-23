@@ -778,6 +778,10 @@ export function Dashboard({ user }: { user: User }) {
         )}
 
         {/* Attendance — all roles */}
+        {/* Cases — admin/supervisor manage, specialists see own */}
+        <CasesCard user={user} role={role} specialists={specialists} profilesMap={profilesMap} />
+
+        {/* Attendance — all roles */}
         <AttendanceCard user={user} role={role} profilesMap={profilesMap} allRoles={allRoles} />
 
 
