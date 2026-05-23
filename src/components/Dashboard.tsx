@@ -755,7 +755,7 @@ function SessionsTable({
             return (
               <tr key={s.id} className="hover:bg-muted/40 transition-colors">
                 <td className="py-3 pr-2 font-medium">{s.case_name}</td>
-                <td className="py-3 px-2 text-muted-foreground">{s.session_type || "—"}</td>
+                <td className="py-3 px-2 text-muted-foreground">{s.session_type || "—"}{s.test_type && <span className="block text-xs text-primary">{s.test_type}</span>}</td>
                 <td className="py-3 px-2 text-muted-foreground" dir="ltr">{s.session_time.slice(0, 5)}</td>
                 <td className="py-3 px-2 text-muted-foreground">{s.duration_minutes} د</td>
                 <td className="py-3 px-2">{Number(s.cost).toFixed(2)}</td>
