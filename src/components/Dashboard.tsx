@@ -837,6 +837,12 @@ function AppointmentRow({
           </Select>
         </div>
       )}
+      {onStart && !isCancelled && !a.started_at && (
+        <Button size="sm" variant="default" onClick={onStart}>بدء الجلسة</Button>
+      )}
+      {onEnd && !isCancelled && a.started_at && !a.ended_at && (
+        <Button size="sm" variant="secondary" onClick={onEnd}>إنهاء الجلسة</Button>
+      )}
       {actionLabel && onAction && !isCancelled && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
       )}
