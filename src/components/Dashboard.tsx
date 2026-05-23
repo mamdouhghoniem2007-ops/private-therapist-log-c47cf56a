@@ -44,6 +44,8 @@ type Appointment = {
   notes: string | null;
   case_whatsapp: string | null;
   status: string;
+  started_at: string | null;
+  ended_at: string | null;
 };
 
 type Profile = { id: string; full_name: string };
