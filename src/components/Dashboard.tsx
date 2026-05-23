@@ -563,8 +563,11 @@ export function Dashboard({ user }: { user: User }) {
                       a={a}
                       subtitle={profilesMap[a.specialist_id] || "—"}
                       onRemove={() => removeAppointment(a.id)}
+                      onCostChange={isAdmin ? (v) => updateAppointmentCost(a.id, v) : undefined}
+                      onPercentageChange={isAdmin ? (v) => updateAppointmentPercentage(a.id, v) : undefined}
                     />
                   ))}
+
                 </div>
               )}
             </CardContent>
