@@ -50,6 +50,7 @@ export function AttendanceCard({
   const [date, setDate] = useState(today());
   const [my, setMy] = useState<AttendanceRow | null>(null);
   const [all, setAll] = useState<AttendanceRow[]>([]);
+  const [myHistory, setMyHistory] = useState<AttendanceRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -74,6 +75,15 @@ export function AttendanceCard({
         .maybeSingle();
       if (error && error.code !== "PGRST116") toast.error(error.message);
       setMy((data as AttendanceRow) || null);
+
+      const { data: hist, error: histErr } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("work_date", { ascending: false })
+        .limit(30);
+      if (histErr) toast.error(histErr.message);
+      setMyHistory((hist as AttendanceRow[]) || []);
     }
     setLoading(false);
   }, [date, user.id, canViewAll]);
