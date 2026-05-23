@@ -58,6 +58,28 @@ export function CasesCard({
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [appts, setAppts] = useState<Record<string, CaseAppt[]>>({});
+  const [apptLoading, setApptLoading] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = async (c: CaseRow) => {
+    const isOpen = !!expanded[c.id];
+    setExpanded((e) => ({ ...e, [c.id]: !isOpen }));
+    if (!isOpen && !appts[c.id]) {
+      setApptLoading((l) => ({ ...l, [c.id]: true }));
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("id, scheduled_date, scheduled_time, status, session_kind")
+        .eq("case_id", c.id)
+        .gte("scheduled_date", today())
+        .order("scheduled_date", { ascending: true })
+        .order("scheduled_time", { ascending: true })
+        .limit(50);
+      if (error) toast.error(error.message);
+      setAppts((a) => ({ ...a, [c.id]: (data as CaseAppt[]) || [] }));
+      setApptLoading((l) => ({ ...l, [c.id]: false }));
+    }
+  };
 
   // form
   const [name, setName] = useState("");
