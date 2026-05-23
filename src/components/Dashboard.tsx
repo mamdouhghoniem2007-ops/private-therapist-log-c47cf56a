@@ -179,13 +179,20 @@ export function Dashboard({ user }: { user: User }) {
       specialist_percentage: percentage,
       session_type: sType,
       test_type: sType === TESTS_LABEL ? sTestType : null,
+      notes: sNotes.trim() || null,
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
-    toast.success("تم تسجيل الجلسة");
-    setCaseName(""); setCost("");
+    const savedName = caseName.trim();
+    const typeLabel = sType === TESTS_LABEL ? `${sType} - ${sTestType}` : sType;
+    toast.success("تم تسجيل الجلسة بنجاح ✅", {
+      description: `الحالة: ${savedName} · ${typeLabel} · ${sDate} الساعة ${sTime} · ${duration} دقيقة · التكلفة ${Number(cost).toFixed(2)}`,
+      duration: 6000,
+    });
+    setCaseName(""); setCost(""); setSNotes("");
     loadAll();
   };
+
 
   const addAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
