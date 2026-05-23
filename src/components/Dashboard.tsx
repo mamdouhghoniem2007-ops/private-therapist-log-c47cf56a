@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog, Download } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { AttendanceCard } from "@/components/AttendanceCard";
 
 type Role = "admin" | "supervisor" | "specialist";
 
@@ -660,6 +661,11 @@ export function Dashboard({ user }: { user: User }) {
             </CardContent>
           </Card>
         )}
+
+        {/* Attendance — all roles */}
+        <AttendanceCard user={user} role={role} profilesMap={profilesMap} allRoles={allRoles} />
+
+
 
         {/* Admin: role management */}
         {isAdmin && (
