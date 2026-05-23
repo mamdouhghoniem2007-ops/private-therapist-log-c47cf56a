@@ -12,6 +12,16 @@ import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog, Download } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { AttendanceCard } from "@/components/AttendanceCard";
+import { CasesCard } from "@/components/CasesCard";
+
+type SessionKind = "regular" | "initial_assessment" | "test" | "periodic_assessment";
+const SESSION_KIND_LABEL: Record<SessionKind, string> = {
+  regular: "جلسة عادية",
+  initial_assessment: "تقييم مبدئي",
+  test: "اختبار",
+  periodic_assessment: "تقييم دوري",
+};
+const SESSION_KINDS: SessionKind[] = ["regular", "initial_assessment", "test", "periodic_assessment"];
 
 type Role = "admin" | "supervisor" | "specialist";
 
