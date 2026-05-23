@@ -373,6 +373,18 @@ export function Dashboard({ user }: { user: User }) {
                       </SelectContent>
                     </Select>
                   </div>
+                  {sType === TESTS_LABEL && (
+                    <div className="space-y-2 lg:col-span-2">
+                      <Label>نوع الاختبار</Label>
+                      <Select value={sTestType} onValueChange={setSTestType}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {TEST_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label>التاريخ</Label>
                     <Input type="date" required value={sDate} onChange={(e) => setSDate(e.target.value)} />
