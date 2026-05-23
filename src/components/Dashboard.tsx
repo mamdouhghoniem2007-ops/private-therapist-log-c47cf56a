@@ -693,10 +693,16 @@ export function Dashboard({ user }: { user: User }) {
             <Label className="text-sm">عرض يوم:</Label>
             <Input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="w-auto" />
             {isAdmin && (
-              <Button type="button" size="sm" variant="outline" onClick={downloadDailySheet} disabled={dayRows.length === 0}>
-                <Download className="h-4 w-4 ml-1" />
-                تنزيل شيت اليوم
-              </Button>
+              <>
+                <Button type="button" size="sm" variant="outline" onClick={downloadDailySheet} disabled={dayRows.length === 0}>
+                  <Download className="h-4 w-4 ml-1" />
+                  شيت اليوم
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={downloadMonthlySheet}>
+                  <Download className="h-4 w-4 ml-1" />
+                  شيت الشهر
+                </Button>
+              </>
             )}
           </div>
           <p className="text-sm text-muted-foreground">
