@@ -777,7 +777,11 @@ function SessionsTable({
             const share = (Number(s.cost) * Number(s.specialist_percentage)) / 100;
             return (
               <tr key={s.id} className="hover:bg-muted/40 transition-colors">
-                <td className="py-3 pr-2 font-medium">{s.case_name}</td>
+                <td className="py-3 pr-2 font-medium align-top">
+                  {s.case_name}
+                  {s.notes && <p className="mt-1 text-xs text-muted-foreground font-normal whitespace-pre-wrap max-w-xs">{s.notes}</p>}
+                </td>
+
                 <td className="py-3 px-2 text-muted-foreground">{s.session_type || "—"}{s.test_type && <span className="block text-xs text-primary">{s.test_type}</span>}</td>
                 <td className="py-3 px-2 text-muted-foreground" dir="ltr">{s.session_time.slice(0, 5)}</td>
                 <td className="py-3 px-2 text-muted-foreground">{s.duration_minutes} د</td>
