@@ -243,6 +243,22 @@ export function Dashboard({ user }: { user: User }) {
     toast.success("تم حذف الموعد");
   };
 
+  const startAppointment = async (id: string) => {
+    const now = new Date().toISOString();
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, started_at: now } : x)));
+    const { error } = await supabase.from("appointments").update({ started_at: now }).eq("id", id);
+    if (error) toast.error(error.message);
+    else toast.success("تم تسجيل بداية الجلسة");
+  };
+
+  const endAppointment = async (id: string) => {
+    const now = new Date().toISOString();
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, ended_at: now } : x)));
+    const { error } = await supabase.from("appointments").update({ ended_at: now }).eq("id", id);
+    if (error) toast.error(error.message);
+    else toast.success("تم تسجيل نهاية الجلسة");
+  };
+
   const updateAppointmentCost = async (id: string, value: number) => {
     setAppointments((a) => a.map((x) => (x.id === id ? { ...x, cost: value } : x)));
     const { error } = await supabase.from("appointments").update({ cost: value }).eq("id", id);
