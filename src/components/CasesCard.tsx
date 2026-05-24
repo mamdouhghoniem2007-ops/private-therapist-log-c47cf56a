@@ -305,6 +305,17 @@ export function CasesCard({
                       المواعيد
                       {expanded[c.id] ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
                     </Button>
+                    {canManage && c.whatsapp && (() => {
+                      const link = waLink(c.whatsapp, `السلام عليكم، بخصوص جلسات "${c.name}" — مركز رعاية.`);
+                      return link ? (
+                        <Button asChild size="sm" variant="outline" className="border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10">
+                          <a href={link} target="_blank" rel="noopener noreferrer">
+                            <MessageCircle className="h-4 w-4 ml-1" />
+                            واتساب
+                          </a>
+                        </Button>
+                      ) : null;
+                    })()}
                     {canManage && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => regenerate(c)} title="توليد مواعيد 8 أسابيع قادمة">
