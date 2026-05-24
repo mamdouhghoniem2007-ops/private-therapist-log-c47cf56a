@@ -365,6 +365,9 @@ export function CasesCard({
                         <Button size="sm" variant="outline" onClick={() => toggleActive(c)}>
                           {c.active ? "إيقاف" : "تفعيل"}
                         </Button>
+                        <Button size="sm" variant="outline" onClick={() => editingId === c.id ? cancelEdit() : startEdit(c)}>
+                          {editingId === c.id ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => remove(c)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -372,6 +375,87 @@ export function CasesCard({
                     )}
                   </div>
                 </div>
+                {canManage && editingId === c.id && editDraft && (
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 p-3 rounded-lg border bg-muted/30">
+                    <div className="space-y-1.5">
+                      <Label>اسم الحالة</Label>
+                      <Input value={editDraft.name} onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>WhatsApp</Label>
+                      <Input dir="ltr" value={editDraft.whatsapp ?? ""} onChange={(e) => setEditDraft({ ...editDraft, whatsapp: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>الأخصائي</Label>
+                      <Select value={editDraft.specialist_id} onValueChange={(v) => setEditDraft({ ...editDraft, specialist_id: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {specialists.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>تاريخ البدء</Label>
+                      <Input type="date" value={editDraft.start_date} onChange={(e) => setEditDraft({ ...editDraft, start_date: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
+                      <Label>أيام الأسبوع</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {DAY_LABELS.map((label, idx) => {
+                          const selected = editDraft.recurring_days.includes(idx);
+                          return (
+                            <button type="button" key={idx} onClick={() => toggleEditDay(idx)}
+                              className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                                selected ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted border-input"
+                              }`}>{label}</button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>الساعة</Label>
+                      <Input type="time" value={editDraft.recurring_time.slice(0,5)} onChange={(e) => setEditDraft({ ...editDraft, recurring_time: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>المدة</Label>
+                      <Select value={String(editDraft.default_duration_minutes)} onValueChange={(v) => setEditDraft({ ...editDraft, default_duration_minutes: +v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {DURATION_OPTIONS.map((d) => <SelectItem key={d} value={String(d)}>{d} دقيقة</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>سعر الجلسة</Label>
+                      <Input type="number" min={0} step="0.01" value={editDraft.default_cost}
+                        onChange={(e) => setEditDraft({ ...editDraft, default_cost: e.target.value === "" ? 0 : +e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>نسبة الأخصائي</Label>
+                      <Select value={String(editDraft.default_specialist_percentage)} onValueChange={(v) => setEditDraft({ ...editDraft, default_specialist_percentage: +v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {PERCENTAGE_OPTIONS.map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
+                      <Label>ملاحظات</Label>
+                      <Input value={editDraft.notes ?? ""} onChange={(e) => setEditDraft({ ...editDraft, notes: e.target.value })} />
+                    </div>
+                    <div className="sm:col-span-2 lg:col-span-4 flex gap-2">
+                      <Button onClick={saveEdit} disabled={savingEdit}>
+                        <Save className="h-4 w-4 ml-1" />
+                        {savingEdit ? "جارٍ الحفظ..." : "حفظ التعديلات"}
+                      </Button>
+                      <Button variant="outline" onClick={cancelEdit} disabled={savingEdit}>إلغاء</Button>
+                      <Button variant="outline" onClick={() => regenerate(c)} disabled={savingEdit} title="إعادة توليد المواعيد القادمة بعد التعديل">
+                        <RefreshCw className="h-4 w-4 ml-1" />
+                        إعادة توليد المواعيد
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 {expanded[c.id] && (
                   <div className="mt-3 rounded-md border bg-muted/30 p-2">
                     {apptLoading[c.id] ? (
