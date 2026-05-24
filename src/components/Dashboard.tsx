@@ -786,41 +786,8 @@ export function Dashboard({ user }: { user: User }) {
 
 
 
-        {/* Admin: role management */}
-        {isAdmin && (
-          <Card className="shadow-[var(--shadow-card)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <UserCog className="h-4 w-4 text-primary" />
-                إدارة صلاحيات المستخدمين
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {allUsersForRoles.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">لا يوجد مستخدمون آخرون بعد</p>
-              ) : (
-                <div className="divide-y">
-                  {allUsersForRoles.map((u) => (
-                    <div key={u.id} className="flex items-center justify-between gap-3 py-3">
-                      <div>
-                        <p className="text-sm font-medium">{u.name}</p>
-                        <p className="text-xs text-muted-foreground">الدور الحالي: {ROLE_LABEL[u.role]}</p>
-                      </div>
-                      <Select value={u.role} onValueChange={(v) => changeUserRole(u.id, v as Role)}>
-                        <SelectTrigger className="w-32 h-8"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="specialist">أخصائي</SelectItem>
-                          <SelectItem value="supervisor">مشرف</SelectItem>
-                          <SelectItem value="admin">مدير</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        {/* Admin: employees management (add / edit / delete) */}
+        {isAdmin && <EmployeesCard currentUserId={user.id} onChanged={loadAll} />}
 
         {/* Sessions — admin (grouped) or specialist (own) */}
         {!isSupervisor && (
