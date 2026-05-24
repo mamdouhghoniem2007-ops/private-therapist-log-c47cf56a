@@ -925,6 +925,27 @@ function AppointmentRow({
       {actionLabel && onAction && !isCancelled && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
       )}
+      {canWhatsApp && a.case_whatsapp && (() => {
+        const link = waLink(a.case_whatsapp, formatAppointmentMessage({
+          caseName: a.case_name,
+          date: a.scheduled_date,
+          time: a.scheduled_time,
+          durationMinutes: a.duration_minutes,
+          specialistName: specialistName || undefined,
+          sessionKindLabel: a.session_kind && a.session_kind !== "regular"
+            ? (a.session_kind === "initial_assessment" ? "تقييم مبدئي" : a.session_kind === "test" ? "اختبار" : "تقييم دوري")
+            : null,
+        }));
+        if (!link) return null;
+        return (
+          <Button asChild size="sm" variant="outline" className="border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10">
+            <a href={link} target="_blank" rel="noopener noreferrer">
+              <MessageCircle className="h-4 w-4 ml-1" />
+              واتساب
+            </a>
+          </Button>
+        );
+      })()}
       {onCancel && !isCancelled && (
         <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10" onClick={onCancel}>
           اعتذرت اليوم
