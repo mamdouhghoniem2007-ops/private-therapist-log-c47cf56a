@@ -840,7 +840,7 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd,
+  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd, canWhatsApp, specialistName,
 }: {
   a: Appointment;
   subtitle?: string;
@@ -853,6 +853,8 @@ function AppointmentRow({
   hideFinancial?: boolean;
   onStart?: () => void;
   onEnd?: () => void;
+  canWhatsApp?: boolean;
+  specialistName?: string;
 }) {
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
