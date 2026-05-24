@@ -346,11 +346,28 @@ export function CasesCard({
                               {new Date(a.scheduled_date).toLocaleDateString("ar-EG", { weekday: "short", day: "2-digit", month: "2-digit" })}
                               <span dir="ltr"> · {a.scheduled_time.slice(0, 5)}</span>
                             </span>
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-1.5">
                               <span className="text-muted-foreground">{KIND_LABEL[a.session_kind] || a.session_kind}</span>
                               {a.status !== "scheduled" && (
                                 <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5">{a.status}</span>
                               )}
+                              {canManage && c.whatsapp && (() => {
+                                const link = waLink(c.whatsapp, formatAppointmentMessage({
+                                  caseName: c.name,
+                                  date: a.scheduled_date,
+                                  time: a.scheduled_time,
+                                  durationMinutes: c.default_duration_minutes,
+                                  specialistName: profilesMap[c.specialist_id],
+                                  sessionKindLabel: a.session_kind !== "regular" ? KIND_LABEL[a.session_kind] : null,
+                                }));
+                                return link ? (
+                                  <a href={link} target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 rounded border border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 px-1.5 py-0.5">
+                                    <MessageCircle className="h-3 w-3" />
+                                    واتساب
+                                  </a>
+                                ) : null;
+                              })()}
                             </span>
                           </li>
                         ))}
