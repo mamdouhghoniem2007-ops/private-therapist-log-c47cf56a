@@ -19,13 +19,23 @@ export function formatAppointmentMessage(opts: {
     : d.toLocaleDateString("ar-EG", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const timeTxt = opts.time.slice(0, 5);
   const lines = [
-    `السلام عليكم، تذكير بموعد جلسة "${opts.caseName}".`,
-    `📅 ${dateTxt}`,
-    `🕐 الساعة ${timeTxt}`,
+    `📋 *تأكيد موعد جلسة — ${opts.caseName}*`,
+    ``,
+    `السلام عليكم ورحمة الله وبركاته،`,
+    `نؤكد لحضرتكم موعد الجلسة بإذن الله:`,
+    ``,
+    `📅 *اليوم:* ${dateTxt}`,
+    `🕐 *الساعة:* ${timeTxt}`,
   ];
-  if (opts.durationMinutes) lines.push(`⏱️ مدة الجلسة: ${opts.durationMinutes} دقيقة`);
-  if (opts.sessionKindLabel) lines.push(`📌 ${opts.sessionKindLabel}`);
-  if (opts.specialistName) lines.push(`👤 الأخصائي: ${opts.specialistName}`);
-  lines.push("", "برجاء تأكيد الحضور. شكراً لكم — مركز رعاية.");
+  if (opts.specialistName) lines.push(`👤 *الأخصائي:* ${opts.specialistName}`);
+  if (opts.durationMinutes) lines.push(`⏱️ *مدة الجلسة:* ${opts.durationMinutes} دقيقة`);
+  if (opts.sessionKindLabel) lines.push(`📌 *نوع الجلسة:* ${opts.sessionKindLabel}`);
+  lines.push(
+    "",
+    `🔔 *نرجو الالتزام بالموعد المحدد، حيث إن أي تأخير يؤثر على باقي الحالات المقررة خلال اليوم.*`,
+    "",
+    `شاكرين لحضرتكم حسن التعاون 🤝`,
+    `— مركز رعاية`,
+  );
   return lines.join("\n");
 }
