@@ -346,10 +346,22 @@ export function CasesCard({
                       {expanded[c.id] ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
                     </Button>
                     {canManage && c.whatsapp && (() => {
-                      const link = waLink(c.whatsapp, `السلام عليكم، بخصوص جلسات "${c.name}" — مركز رعاية.`);
+                      const todayStr = new Date().toISOString().slice(0, 10);
+                      const next = (appts[c.id] || []).find((a) => a.scheduled_date >= todayStr && a.status !== "cancelled");
+                      const msg = next
+                        ? formatAppointmentMessage({
+                            caseName: c.name,
+                            date: next.scheduled_date,
+                            time: next.scheduled_time,
+                            durationMinutes: c.default_duration_minutes,
+                            specialistName: profilesMap[c.specialist_id] || null,
+                            sessionKindLabel: next.session_kind !== "regular" ? KIND_LABEL[next.session_kind] : null,
+                          })
+                        : `السلام عليكم، بخصوص جلسات "${c.name}" — مركز رعاية.`;
+                      const link = waLink(c.whatsapp, msg);
                       return link ? (
                         <Button asChild size="sm" variant="outline" className="border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10">
-                          <a href={link} target="_blank" rel="noopener noreferrer">
+                          <a href={link} target="_blank" rel="noopener noreferrer" onClick={() => { if (!appts[c.id]) toggleExpand(c); }}>
                             <MessageCircle className="h-4 w-4 ml-1" />
                             واتساب
                           </a>
