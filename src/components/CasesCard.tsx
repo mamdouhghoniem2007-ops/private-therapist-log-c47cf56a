@@ -62,6 +62,46 @@ export function CasesCard({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [appts, setAppts] = useState<Record<string, CaseAppt[]>>({});
   const [apptLoading, setApptLoading] = useState<Record<string, boolean>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<CaseRow | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const startEdit = (c: CaseRow) => {
+    setEditingId(c.id);
+    setEditDraft({ ...c });
+  };
+  const cancelEdit = () => { setEditingId(null); setEditDraft(null); };
+  const toggleEditDay = (d: number) => {
+    if (!editDraft) return;
+    const ds = editDraft.recurring_days.includes(d)
+      ? editDraft.recurring_days.filter((x) => x !== d)
+      : [...editDraft.recurring_days, d].sort();
+    setEditDraft({ ...editDraft, recurring_days: ds });
+  };
+  const saveEdit = async () => {
+    if (!editDraft) return;
+    if (!editDraft.name.trim()) return toast.error("اسم الحالة مطلوب");
+    if (editDraft.recurring_days.length === 0) return toast.error("اختر أيام الأسبوع");
+    setSavingEdit(true);
+    const { error } = await supabase.from("cases").update({
+      name: editDraft.name.trim(),
+      whatsapp: editDraft.whatsapp?.trim() || null,
+      specialist_id: editDraft.specialist_id,
+      recurring_days: editDraft.recurring_days,
+      recurring_time: editDraft.recurring_time,
+      default_duration_minutes: editDraft.default_duration_minutes,
+      default_cost: Number(editDraft.default_cost),
+      default_specialist_percentage: editDraft.default_specialist_percentage,
+      start_date: editDraft.start_date,
+      notes: editDraft.notes,
+    }).eq("id", editDraft.id);
+    setSavingEdit(false);
+    if (error) return toast.error(error.message);
+    setCases((cs) => cs.map((x) => x.id === editDraft.id ? editDraft : x));
+    setAppts((a) => { const { [editDraft.id]: _, ...rest } = a; return rest; });
+    toast.success("تم حفظ التعديلات");
+    cancelEdit();
+  };
 
   const toggleExpand = async (c: CaseRow) => {
     const isOpen = !!expanded[c.id];
