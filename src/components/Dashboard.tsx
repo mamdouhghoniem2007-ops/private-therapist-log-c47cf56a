@@ -13,6 +13,7 @@ import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shie
 import logo from "@/assets/logo.png";
 import { AttendanceCard } from "@/components/AttendanceCard";
 import { CasesCard } from "@/components/CasesCard";
+import { EmployeesCard } from "@/components/EmployeesCard";
 
 type SessionKind = "regular" | "initial_assessment" | "test" | "periodic_assessment";
 const SESSION_KIND_LABEL: Record<SessionKind, string> = {
