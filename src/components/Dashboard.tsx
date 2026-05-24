@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog, Download } from "lucide-react";
+import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog, Download, MessageCircle } from "lucide-react";
+import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 import logo from "@/assets/logo.png";
 import { AttendanceCard } from "@/components/AttendanceCard";
 import { CasesCard } from "@/components/CasesCard";
@@ -765,10 +766,12 @@ export function Dashboard({ user }: { user: User }) {
                       key={a.id}
                       a={a}
                       subtitle={profilesMap[a.specialist_id] || "—"}
+                      specialistName={profilesMap[a.specialist_id] || ""}
                       onRemove={() => removeAppointment(a.id)}
                       onCostChange={isAdmin ? (v) => updateAppointmentCost(a.id, v) : undefined}
                       onPercentageChange={isAdmin ? (v) => updateAppointmentPercentage(a.id, v) : undefined}
                       hideFinancial={isSupervisor}
+                      canWhatsApp
                     />
                   ))}
 
@@ -837,7 +840,7 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd,
+  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd, canWhatsApp, specialistName,
 }: {
   a: Appointment;
   subtitle?: string;
@@ -850,6 +853,8 @@ function AppointmentRow({
   hideFinancial?: boolean;
   onStart?: () => void;
   onEnd?: () => void;
+  canWhatsApp?: boolean;
+  specialistName?: string;
 }) {
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
@@ -920,6 +925,27 @@ function AppointmentRow({
       {actionLabel && onAction && !isCancelled && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
       )}
+      {canWhatsApp && a.case_whatsapp && (() => {
+        const link = waLink(a.case_whatsapp, formatAppointmentMessage({
+          caseName: a.case_name,
+          date: a.scheduled_date,
+          time: a.scheduled_time,
+          durationMinutes: a.duration_minutes,
+          specialistName: specialistName || undefined,
+          sessionKindLabel: a.session_kind && a.session_kind !== "regular"
+            ? (a.session_kind === "initial_assessment" ? "تقييم مبدئي" : a.session_kind === "test" ? "اختبار" : "تقييم دوري")
+            : null,
+        }));
+        if (!link) return null;
+        return (
+          <Button asChild size="sm" variant="outline" className="border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10">
+            <a href={link} target="_blank" rel="noopener noreferrer">
+              <MessageCircle className="h-4 w-4 ml-1" />
+              واتساب
+            </a>
+          </Button>
+        );
+      })()}
       {onCancel && !isCancelled && (
         <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10" onClick={onCancel}>
           اعتذرت اليوم

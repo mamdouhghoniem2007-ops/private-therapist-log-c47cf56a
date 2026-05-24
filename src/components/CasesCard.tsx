@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle } from "lucide-react";
+import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 
 type CaseAppt = {
   id: string;
@@ -304,6 +305,17 @@ export function CasesCard({
                       المواعيد
                       {expanded[c.id] ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
                     </Button>
+                    {canManage && c.whatsapp && (() => {
+                      const link = waLink(c.whatsapp, `السلام عليكم، بخصوص جلسات "${c.name}" — مركز رعاية.`);
+                      return link ? (
+                        <Button asChild size="sm" variant="outline" className="border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10">
+                          <a href={link} target="_blank" rel="noopener noreferrer">
+                            <MessageCircle className="h-4 w-4 ml-1" />
+                            واتساب
+                          </a>
+                        </Button>
+                      ) : null;
+                    })()}
                     {canManage && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => regenerate(c)} title="توليد مواعيد 8 أسابيع قادمة">
@@ -334,11 +346,28 @@ export function CasesCard({
                               {new Date(a.scheduled_date).toLocaleDateString("ar-EG", { weekday: "short", day: "2-digit", month: "2-digit" })}
                               <span dir="ltr"> · {a.scheduled_time.slice(0, 5)}</span>
                             </span>
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-1.5">
                               <span className="text-muted-foreground">{KIND_LABEL[a.session_kind] || a.session_kind}</span>
                               {a.status !== "scheduled" && (
                                 <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5">{a.status}</span>
                               )}
+                              {canManage && c.whatsapp && (() => {
+                                const link = waLink(c.whatsapp, formatAppointmentMessage({
+                                  caseName: c.name,
+                                  date: a.scheduled_date,
+                                  time: a.scheduled_time,
+                                  durationMinutes: c.default_duration_minutes,
+                                  specialistName: profilesMap[c.specialist_id],
+                                  sessionKindLabel: a.session_kind !== "regular" ? KIND_LABEL[a.session_kind] : null,
+                                }));
+                                return link ? (
+                                  <a href={link} target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 rounded border border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 px-1.5 py-0.5">
+                                    <MessageCircle className="h-3 w-3" />
+                                    واتساب
+                                  </a>
+                                ) : null;
+                              })()}
                             </span>
                           </li>
                         ))}
