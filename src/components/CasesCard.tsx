@@ -181,12 +181,14 @@ export function CasesCard({
       specialist_id: specialistId,
       recurring_days: days,
       recurring_time: time,
-      default_duration_minutes: duration,
       default_cost: Number(cost),
       default_specialist_percentage: percentage,
+      default_session_kind: sessionKind,
       start_date: startDate,
       active: true,
       created_by: user.id,
+    });
+
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
