@@ -37,6 +37,7 @@ type CaseRow = {
   default_duration_minutes: number;
   default_cost: number;
   default_specialist_percentage: number;
+  default_session_kind: string;
   start_date: string;
   active: boolean;
   notes: string | null;
@@ -45,7 +46,14 @@ type CaseRow = {
 const DAY_LABELS = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
 const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+const KIND_OPTIONS: { value: string; label: string }[] = [
+  { value: "regular", label: "جلسة عادية" },
+  { value: "initial_assessment", label: "تقييم مبدئي" },
+  { value: "test", label: "اختبار" },
+  { value: "periodic_assessment", label: "تقييم دوري" },
+];
 const today = () => new Date().toISOString().slice(0, 10);
+
 
 export function CasesCard({
   user, role, specialists, profilesMap,
@@ -92,6 +100,7 @@ export function CasesCard({
       default_duration_minutes: editDraft.default_duration_minutes,
       default_cost: Number(editDraft.default_cost),
       default_specialist_percentage: editDraft.default_specialist_percentage,
+      default_session_kind: editDraft.default_session_kind,
       start_date: editDraft.start_date,
       notes: editDraft.notes,
     }).eq("id", editDraft.id);
@@ -102,6 +111,7 @@ export function CasesCard({
     toast.success("تم حفظ التعديلات");
     cancelEdit();
   };
+
 
   const toggleExpand = async (c: CaseRow) => {
     const isOpen = !!expanded[c.id];
@@ -131,8 +141,10 @@ export function CasesCard({
   const [duration, setDuration] = useState(45);
   const [cost, setCost] = useState<number | "">("");
   const [percentage, setPercentage] = useState(50);
+  const [sessionKind, setSessionKind] = useState<string>("regular");
   const [startDate, setStartDate] = useState(today());
   const [submitting, setSubmitting] = useState(false);
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -151,10 +163,10 @@ export function CasesCard({
 
   const toggleDay = (d: number) =>
     setDays((ds) => ds.includes(d) ? ds.filter((x) => x !== d) : [...ds, d].sort());
-
   const resetForm = () => {
-    setName(""); setWhatsapp(""); setDays([]); setCost(""); setShowForm(false);
+    setName(""); setWhatsapp(""); setDays([]); setCost(""); setSessionKind("regular"); setShowForm(false);
   };
+
 
   const addCase = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,10 +183,12 @@ export function CasesCard({
       default_duration_minutes: duration,
       default_cost: Number(cost),
       default_specialist_percentage: percentage,
+      default_session_kind: sessionKind,
       start_date: startDate,
       active: true,
       created_by: user.id,
     });
+
     setSubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تمت إضافة الحالة وتوليد المواعيد القادمة");
@@ -308,6 +322,15 @@ export function CasesCard({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>نوع الجلسة</Label>
+              <Select value={sessionKind} onValueChange={setSessionKind}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {KIND_OPTIONS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="sm:col-span-2 lg:col-span-4">
               <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "جارٍ الحفظ..." : "إضافة الحالة وتوليد المواعيد"}
@@ -330,6 +353,9 @@ export function CasesCard({
                       <span className={`font-semibold ${!c.active ? "text-muted-foreground line-through" : ""}`}>{c.name}</span>
                       {!c.active && <span className="text-xs rounded bg-muted px-2 py-0.5">موقوفة</span>}
                       <span className="text-xs text-muted-foreground">— {profilesMap[c.specialist_id] || "—"}</span>
+                      <span className="text-[10px] rounded bg-primary/10 text-primary px-1.5 py-0.5">
+                        {KIND_OPTIONS.find((k) => k.value === (c.default_session_kind || "regular"))?.label}
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {c.recurring_days.map((d) => DAY_LABELS[d]).join("، ") || "—"}
@@ -448,6 +474,15 @@ export function CasesCard({
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {PERCENTAGE_OPTIONS.map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>نوع الجلسة</Label>
+                      <Select value={editDraft.default_session_kind || "regular"} onValueChange={(v) => setEditDraft({ ...editDraft, default_session_kind: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {KIND_OPTIONS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
