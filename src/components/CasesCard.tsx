@@ -353,6 +353,9 @@ export function CasesCard({
                       <span className={`font-semibold ${!c.active ? "text-muted-foreground line-through" : ""}`}>{c.name}</span>
                       {!c.active && <span className="text-xs rounded bg-muted px-2 py-0.5">موقوفة</span>}
                       <span className="text-xs text-muted-foreground">— {profilesMap[c.specialist_id] || "—"}</span>
+                      <span className="text-[10px] rounded bg-primary/10 text-primary px-1.5 py-0.5">
+                        {KIND_OPTIONS.find((k) => k.value === (c.default_session_kind || "regular"))?.label}
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {c.recurring_days.map((d) => DAY_LABELS[d]).join("، ") || "—"}
