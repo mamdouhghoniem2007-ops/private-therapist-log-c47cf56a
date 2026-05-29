@@ -322,6 +322,15 @@ export function CasesCard({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>نوع الجلسة</Label>
+              <Select value={sessionKind} onValueChange={setSessionKind}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {KIND_OPTIONS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="sm:col-span-2 lg:col-span-4">
               <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "جارٍ الحفظ..." : "إضافة الحالة وتوليد المواعيد"}
