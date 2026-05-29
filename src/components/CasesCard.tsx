@@ -163,9 +163,10 @@ export function CasesCard({
 
   const toggleDay = (d: number) =>
     setDays((ds) => ds.includes(d) ? ds.filter((x) => x !== d) : [...ds, d].sort());
-
   const resetForm = () => {
-    setName(""); setWhatsapp(""); setDays([]); setCost(""); setShowForm(false);
+    setName(""); setWhatsapp(""); setDays([]); setCost(""); setSessionKind("regular"); setShowForm(false);
+  };
+
   };
 
   const addCase = async (e: React.FormEvent) => {
