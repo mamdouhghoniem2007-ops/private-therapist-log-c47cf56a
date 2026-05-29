@@ -19,9 +19,11 @@ type CaseAppt = {
 };
 
 const KIND_LABEL: Record<string, string> = {
-  regular: "عادية",
-  initial_assessment: "تقييم مبدئي",
+  regular: "جلسة عادية",
+  assessment: "تقييم",
   test: "اختبار",
+  // legacy
+  initial_assessment: "تقييم مبدئي",
   periodic_assessment: "تقييم دوري",
 };
 
@@ -38,6 +40,7 @@ type CaseRow = {
   default_cost: number;
   default_specialist_percentage: number;
   default_session_kind: string;
+  default_session_subtype: string | null;
   start_date: string;
   active: boolean;
   notes: string | null;
@@ -48,11 +51,28 @@ const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
 const KIND_OPTIONS: { value: string; label: string }[] = [
   { value: "regular", label: "جلسة عادية" },
-  { value: "initial_assessment", label: "تقييم مبدئي" },
+  { value: "assessment", label: "تقييم" },
   { value: "test", label: "اختبار" },
-  { value: "periodic_assessment", label: "تقييم دوري" },
 ];
+const REGULAR_SUBTYPES = ["تخاطب", "تنمية مهارات", "تعديل سلوك", "تأهيل", "تأسيس أكاديمي", "صعوبات تعلم", "علاج وظيفي"];
+const ASSESSMENT_SUBTYPES = ["تقييم مبدئي", "تقييم دوري"];
+const TEST_SUBTYPES = [
+  "IQ ستانفورد بينيه",
+  "وكسلر للأطفال",
+  "ADHD - فرط الحركة وتشتت الانتباه",
+  "مقياس فرص الانتباه (Conners)",
+  "مقياس جيليام للتوحد (GARS)",
+  "بورتاج للنمو",
+  "فاينلاند للسلوك التكيفي",
+  "اختبار اللغة",
+  "اختبار صعوبات التعلم",
+  "تقييم النطق والكلام",
+];
+const subtypeOptions = (kind: string) =>
+  kind === "test" ? TEST_SUBTYPES : kind === "assessment" ? ASSESSMENT_SUBTYPES : REGULAR_SUBTYPES;
+const defaultSubtypeFor = (kind: string) => subtypeOptions(kind)[0];
 const today = () => new Date().toISOString().slice(0, 10);
+
 
 
 export function CasesCard({
