@@ -520,13 +520,23 @@ export function CasesCard({
                     </div>
                     <div className="space-y-1.5">
                       <Label>نوع الجلسة</Label>
-                      <Select value={editDraft.default_session_kind || "regular"} onValueChange={(v) => setEditDraft({ ...editDraft, default_session_kind: v })}>
+                      <Select value={editDraft.default_session_kind || "regular"} onValueChange={(v) => setEditDraft({ ...editDraft, default_session_kind: v, default_session_subtype: defaultSubtypeFor(v) })}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {KIND_OPTIONS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label>{editDraft.default_session_kind === "test" ? "نوع الاختبار" : editDraft.default_session_kind === "assessment" ? "نوع التقييم" : "تخصص الجلسة"}</Label>
+                      <Select value={editDraft.default_session_subtype || defaultSubtypeFor(editDraft.default_session_kind || "regular")} onValueChange={(v) => setEditDraft({ ...editDraft, default_session_subtype: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {subtypeOptions(editDraft.default_session_kind || "regular").map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
                       <Label>ملاحظات</Label>
                       <Input value={editDraft.notes ?? ""} onChange={(e) => setEditDraft({ ...editDraft, notes: e.target.value })} />
