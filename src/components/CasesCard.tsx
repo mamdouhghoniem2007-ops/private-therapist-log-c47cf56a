@@ -181,6 +181,7 @@ export function CasesCard({
       specialist_id: specialistId,
       recurring_days: days,
       recurring_time: time,
+      default_duration_minutes: duration,
       default_cost: Number(cost),
       default_specialist_percentage: percentage,
       default_session_kind: sessionKind,
@@ -189,7 +190,6 @@ export function CasesCard({
       created_by: user.id,
     });
 
-    });
     setSubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تمت إضافة الحالة وتوليد المواعيد القادمة");
