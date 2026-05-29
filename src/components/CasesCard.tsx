@@ -167,7 +167,6 @@ export function CasesCard({
     setName(""); setWhatsapp(""); setDays([]); setCost(""); setSessionKind("regular"); setShowForm(false);
   };
 
-  };
 
   const addCase = async (e: React.FormEvent) => {
     e.preventDefault();
