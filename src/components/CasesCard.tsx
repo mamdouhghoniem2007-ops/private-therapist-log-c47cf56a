@@ -113,26 +113,6 @@ export function CasesCard({
     cancelEdit();
   };
 
-    const { error } = await supabase.from("cases").update({
-      name: editDraft.name.trim(),
-      whatsapp: editDraft.whatsapp?.trim() || null,
-      specialist_id: editDraft.specialist_id,
-      recurring_days: editDraft.recurring_days,
-      recurring_time: editDraft.recurring_time,
-      default_duration_minutes: editDraft.default_duration_minutes,
-      default_cost: Number(editDraft.default_cost),
-      default_specialist_percentage: editDraft.default_specialist_percentage,
-      default_session_kind: editDraft.default_session_kind,
-      start_date: editDraft.start_date,
-      notes: editDraft.notes,
-    }).eq("id", editDraft.id);
-    setSavingEdit(false);
-    if (error) return toast.error(error.message);
-    setCases((cs) => cs.map((x) => x.id === editDraft.id ? editDraft : x));
-    setAppts((a) => { const { [editDraft.id]: _, ...rest } = a; return rest; });
-    toast.success("تم حفظ التعديلات");
-    cancelEdit();
-  };
 
 
   const toggleExpand = async (c: CaseRow) => {
