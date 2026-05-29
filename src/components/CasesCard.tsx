@@ -37,6 +37,7 @@ type CaseRow = {
   default_duration_minutes: number;
   default_cost: number;
   default_specialist_percentage: number;
+  default_session_kind: string;
   start_date: string;
   active: boolean;
   notes: string | null;
@@ -45,7 +46,14 @@ type CaseRow = {
 const DAY_LABELS = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
 const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+const KIND_OPTIONS: { value: string; label: string }[] = [
+  { value: "regular", label: "جلسة عادية" },
+  { value: "initial_assessment", label: "تقييم مبدئي" },
+  { value: "test", label: "اختبار" },
+  { value: "periodic_assessment", label: "تقييم دوري" },
+];
 const today = () => new Date().toISOString().slice(0, 10);
+
 
 export function CasesCard({
   user, role, specialists, profilesMap,
