@@ -85,7 +85,27 @@ export function CasesCard({
 }) {
   const canManage = role === "admin" || role === "supervisor";
   const [cases, setCases] = useState<CaseRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [appts, setAppts] = useState<Record<string, CaseAppt[]>>({});
+  const [apptLoading, setApptLoading] = useState<Record<string, boolean>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<CaseRow | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const startEdit = (c: CaseRow) => {
+    setEditingId(c.id);
+    setEditDraft({ ...c });
+  };
+  const cancelEdit = () => { setEditingId(null); setEditDraft(null); };
+  const toggleEditDay = (d: number) => {
+    if (!editDraft) return;
+    const ds = editDraft.recurring_days.includes(d)
+      ? editDraft.recurring_days.filter((x) => x !== d)
+      : [...editDraft.recurring_days, d].sort();
+    setEditDraft({ ...editDraft, recurring_days: ds });
+  };
+
   const saveEdit = async () => {
     if (!editDraft) return;
     if (!editDraft.name.trim()) return toast.error("اسم الحالة مطلوب");
