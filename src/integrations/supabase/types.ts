@@ -121,6 +121,7 @@ export type Database = {
           default_cost: number
           default_duration_minutes: number
           default_session_kind: string
+          default_session_subtype: string | null
           default_specialist_percentage: number
           id: string
           name: string
@@ -139,6 +140,7 @@ export type Database = {
           default_cost?: number
           default_duration_minutes?: number
           default_session_kind?: string
+          default_session_subtype?: string | null
           default_specialist_percentage?: number
           id?: string
           name: string
@@ -157,6 +159,7 @@ export type Database = {
           default_cost?: number
           default_duration_minutes?: number
           default_session_kind?: string
+          default_session_subtype?: string | null
           default_specialist_percentage?: number
           id?: string
           name?: string
