@@ -477,6 +477,15 @@ export function CasesCard({
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label>نوع الجلسة</Label>
+                      <Select value={editDraft.default_session_kind || "regular"} onValueChange={(v) => setEditDraft({ ...editDraft, default_session_kind: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {KIND_OPTIONS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
                       <Label>ملاحظات</Label>
                       <Input value={editDraft.notes ?? ""} onChange={(e) => setEditDraft({ ...editDraft, notes: e.target.value })} />
