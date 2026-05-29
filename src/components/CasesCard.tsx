@@ -141,8 +141,10 @@ export function CasesCard({
   const [duration, setDuration] = useState(45);
   const [cost, setCost] = useState<number | "">("");
   const [percentage, setPercentage] = useState(50);
+  const [sessionKind, setSessionKind] = useState<string>("regular");
   const [startDate, setStartDate] = useState(today());
   const [submitting, setSubmitting] = useState(false);
+
 
   const load = useCallback(async () => {
     setLoading(true);
