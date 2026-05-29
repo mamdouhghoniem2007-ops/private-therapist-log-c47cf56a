@@ -85,7 +85,9 @@ export function CasesCard({
 }) {
   const canManage = role === "admin" || role === "supervisor";
   const [cases, setCases] = useState<CaseRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [appts, setAppts] = useState<Record<string, CaseAppt[]>>({});
   const [apptLoading, setApptLoading] = useState<Record<string, boolean>>({});
