@@ -19,9 +19,11 @@ type CaseAppt = {
 };
 
 const KIND_LABEL: Record<string, string> = {
-  regular: "عادية",
-  initial_assessment: "تقييم مبدئي",
+  regular: "جلسة عادية",
+  assessment: "تقييم",
   test: "اختبار",
+  // legacy
+  initial_assessment: "تقييم مبدئي",
   periodic_assessment: "تقييم دوري",
 };
 
@@ -38,6 +40,7 @@ type CaseRow = {
   default_cost: number;
   default_specialist_percentage: number;
   default_session_kind: string;
+  default_session_subtype: string | null;
   start_date: string;
   active: boolean;
   notes: string | null;
@@ -48,11 +51,28 @@ const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
 const KIND_OPTIONS: { value: string; label: string }[] = [
   { value: "regular", label: "جلسة عادية" },
-  { value: "initial_assessment", label: "تقييم مبدئي" },
+  { value: "assessment", label: "تقييم" },
   { value: "test", label: "اختبار" },
-  { value: "periodic_assessment", label: "تقييم دوري" },
 ];
+const REGULAR_SUBTYPES = ["تخاطب", "تنمية مهارات", "تعديل سلوك", "تأهيل", "تأسيس أكاديمي", "صعوبات تعلم", "علاج وظيفي"];
+const ASSESSMENT_SUBTYPES = ["تقييم مبدئي", "تقييم دوري"];
+const TEST_SUBTYPES = [
+  "IQ ستانفورد بينيه",
+  "وكسلر للأطفال",
+  "ADHD - فرط الحركة وتشتت الانتباه",
+  "مقياس فرص الانتباه (Conners)",
+  "مقياس جيليام للتوحد (GARS)",
+  "بورتاج للنمو",
+  "فاينلاند للسلوك التكيفي",
+  "اختبار اللغة",
+  "اختبار صعوبات التعلم",
+  "تقييم النطق والكلام",
+];
+const subtypeOptions = (kind: string) =>
+  kind === "test" ? TEST_SUBTYPES : kind === "assessment" ? ASSESSMENT_SUBTYPES : REGULAR_SUBTYPES;
+const defaultSubtypeFor = (kind: string) => subtypeOptions(kind)[0];
 const today = () => new Date().toISOString().slice(0, 10);
+
 
 
 export function CasesCard({
@@ -67,6 +87,7 @@ export function CasesCard({
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [appts, setAppts] = useState<Record<string, CaseAppt[]>>({});
   const [apptLoading, setApptLoading] = useState<Record<string, boolean>>({});
@@ -86,6 +107,7 @@ export function CasesCard({
       : [...editDraft.recurring_days, d].sort();
     setEditDraft({ ...editDraft, recurring_days: ds });
   };
+
   const saveEdit = async () => {
     if (!editDraft) return;
     if (!editDraft.name.trim()) return toast.error("اسم الحالة مطلوب");
@@ -101,6 +123,7 @@ export function CasesCard({
       default_cost: Number(editDraft.default_cost),
       default_specialist_percentage: editDraft.default_specialist_percentage,
       default_session_kind: editDraft.default_session_kind,
+      default_session_subtype: editDraft.default_session_subtype,
       start_date: editDraft.start_date,
       notes: editDraft.notes,
     }).eq("id", editDraft.id);
@@ -111,6 +134,7 @@ export function CasesCard({
     toast.success("تم حفظ التعديلات");
     cancelEdit();
   };
+
 
 
   const toggleExpand = async (c: CaseRow) => {
@@ -142,7 +166,9 @@ export function CasesCard({
   const [cost, setCost] = useState<number | "">("");
   const [percentage, setPercentage] = useState(50);
   const [sessionKind, setSessionKind] = useState<string>("regular");
+  const [sessionSubtype, setSessionSubtype] = useState<string>(defaultSubtypeFor("regular"));
   const [startDate, setStartDate] = useState(today());
+
   const [submitting, setSubmitting] = useState(false);
 
 
@@ -164,8 +190,11 @@ export function CasesCard({
   const toggleDay = (d: number) =>
     setDays((ds) => ds.includes(d) ? ds.filter((x) => x !== d) : [...ds, d].sort());
   const resetForm = () => {
-    setName(""); setWhatsapp(""); setDays([]); setCost(""); setSessionKind("regular"); setShowForm(false);
+    setName(""); setWhatsapp(""); setDays([]); setCost("");
+    setSessionKind("regular"); setSessionSubtype(defaultSubtypeFor("regular"));
+    setShowForm(false);
   };
+
 
 
   const addCase = async (e: React.FormEvent) => {
@@ -184,6 +213,8 @@ export function CasesCard({
       default_cost: Number(cost),
       default_specialist_percentage: percentage,
       default_session_kind: sessionKind,
+      default_session_subtype: sessionSubtype,
+
       start_date: startDate,
       active: true,
       created_by: user.id,
@@ -324,13 +355,23 @@ export function CasesCard({
             </div>
             <div className="space-y-1.5">
               <Label>نوع الجلسة</Label>
-              <Select value={sessionKind} onValueChange={setSessionKind}>
+              <Select value={sessionKind} onValueChange={(v) => { setSessionKind(v); setSessionSubtype(defaultSubtypeFor(v)); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {KIND_OPTIONS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>{sessionKind === "test" ? "نوع الاختبار" : sessionKind === "assessment" ? "نوع التقييم" : "تخصص الجلسة"}</Label>
+              <Select value={sessionSubtype} onValueChange={setSessionSubtype}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {subtypeOptions(sessionKind).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="sm:col-span-2 lg:col-span-4">
               <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "جارٍ الحفظ..." : "إضافة الحالة وتوليد المواعيد"}
@@ -479,13 +520,23 @@ export function CasesCard({
                     </div>
                     <div className="space-y-1.5">
                       <Label>نوع الجلسة</Label>
-                      <Select value={editDraft.default_session_kind || "regular"} onValueChange={(v) => setEditDraft({ ...editDraft, default_session_kind: v })}>
+                      <Select value={editDraft.default_session_kind || "regular"} onValueChange={(v) => setEditDraft({ ...editDraft, default_session_kind: v, default_session_subtype: defaultSubtypeFor(v) })}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {KIND_OPTIONS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label>{editDraft.default_session_kind === "test" ? "نوع الاختبار" : editDraft.default_session_kind === "assessment" ? "نوع التقييم" : "تخصص الجلسة"}</Label>
+                      <Select value={editDraft.default_session_subtype || defaultSubtypeFor(editDraft.default_session_kind || "regular")} onValueChange={(v) => setEditDraft({ ...editDraft, default_session_subtype: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {subtypeOptions(editDraft.default_session_kind || "regular").map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
                       <Label>ملاحظات</Label>
                       <Input value={editDraft.notes ?? ""} onChange={(e) => setEditDraft({ ...editDraft, notes: e.target.value })} />
