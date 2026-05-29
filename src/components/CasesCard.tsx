@@ -186,13 +186,13 @@ export function CasesCard({
   }, [specialists, specialistId]);
 
   const toggleDay = (d: number) =>
+    setDays((ds) => ds.includes(d) ? ds.filter((x) => x !== d) : [...ds, d].sort());
   const resetForm = () => {
     setName(""); setWhatsapp(""); setDays([]); setCost("");
     setSessionKind("regular"); setSessionSubtype(defaultSubtypeFor("regular"));
     setShowForm(false);
   };
 
-  };
 
 
   const addCase = async (e: React.FormEvent) => {
