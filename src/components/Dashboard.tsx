@@ -326,8 +326,19 @@ export function Dashboard({ user }: { user: User }) {
 
   const dayRows = useMemo(() => sessions.filter((s) => s.session_date === filterDate), [sessions, filterDate]);
   const myDayAppointments = useMemo(
-    () => appointments.filter((a) => a.specialist_id === user.id && a.scheduled_date === filterDate),
-    [appointments, user.id, filterDate],
+    () =>
+      appointments.filter((a) => {
+        if (a.specialist_id !== user.id || a.scheduled_date !== filterDate) return false;
+        // الأخصائي يرى الجلسة فقط قبل ميعادها بـ 24 ساعة أو أقل
+        if (isSpecialist) {
+          const apptDateTime = new Date(`${a.scheduled_date}T${a.scheduled_time}`);
+          const diffMs = apptDateTime.getTime() - Date.now();
+          // اعرضها إذا كانت خلال الـ24 ساعة القادمة أو إذا بدأت بالفعل
+          if (diffMs > 24 * 60 * 60 * 1000) return false;
+        }
+        return true;
+      }),
+    [appointments, user.id, filterDate, isSpecialist],
   );
   const allDayAppointments = useMemo(
     () => appointments.filter((a) => a.scheduled_date === filterDate),
