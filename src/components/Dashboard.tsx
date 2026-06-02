@@ -918,6 +918,11 @@ function AppointmentRow({
       {onEnd && !isCancelled && a.started_at && !a.ended_at && (
         <Button size="sm" variant="secondary" onClick={onEnd}>إنهاء الجلسة</Button>
       )}
+      {onRevert && (a.started_at || a.ended_at) && (
+        <Button size="sm" variant="outline" className="border-amber-500/40 text-amber-700 hover:bg-amber-500/10" onClick={onRevert}>
+          إرجاع الجلسة
+        </Button>
+      )}
       {actionLabel && onAction && !isCancelled && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
       )}
