@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const map = {
-  'r3aya.chnnel@gmail.com': 'Admin@2026',
+  'r3aya.chnnel@gmail.com': 'R3ayaAdmin2026',
   'salmasennara@gmail.com': 'Salma@2026',
   'ayayounis576@gmail.com': 'Aya@2026',
   'ba700894@gmail.com': 'Basant@2026',
