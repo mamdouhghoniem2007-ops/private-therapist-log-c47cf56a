@@ -969,6 +969,18 @@ export function Dashboard({ user }: { user: User }) {
                 </Button>
               </>
             )}
+            {(isAdmin || isSpecialist) && (
+              <>
+                <Button type="button" size="sm" variant="secondary" onClick={printDailySheet} disabled={dayRows.length === 0}>
+                  <Printer className="h-4 w-4 ml-1" />
+                  طباعة اليوم
+                </Button>
+                <Button type="button" size="sm" variant="secondary" onClick={printMonthlySheet}>
+                  <Printer className="h-4 w-4 ml-1" />
+                  طباعة الشهر
+                </Button>
+              </>
+            )}
           </div>
           <p className="text-sm text-muted-foreground">
             {canManageSchedule && `${allDayAppointments.length} موعد`}
