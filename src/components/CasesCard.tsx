@@ -440,6 +440,16 @@ export function CasesCard({
                       المواعيد
                       {expanded[c.id] ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
                     </Button>
+                    {role === "specialist" && c.specialist_id === user.id && c.active && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-500/50 text-red-700 hover:bg-red-500/10"
+                        onClick={() => markCaseAbsentToday(c)}
+                      >
+                        غائبة اليوم
+                      </Button>
+                    )}
                     {canManage && c.whatsapp && (() => {
                       const todayStr = new Date().toISOString().slice(0, 10);
                       const next = (appts[c.id] || []).find((a) => a.scheduled_date >= todayStr && a.status !== "cancelled");
