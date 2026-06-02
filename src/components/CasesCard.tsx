@@ -49,6 +49,7 @@ type CaseRow = {
 const DAY_LABELS = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
 const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+const COST_PRESETS = [30, 75, 87.5, 100];
 const KIND_OPTIONS: { value: string; label: string }[] = [
   { value: "regular", label: "جلسة عادية" },
   { value: "assessment", label: "تقييم" },
