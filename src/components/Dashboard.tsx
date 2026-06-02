@@ -276,16 +276,85 @@ export function Dashboard({ user }: { user: User }) {
     loadAll();
   };
 
-  const markAppointmentCancelled = async (id: string) => {
-    const { error } = await supabase.from("appointments").update({ status: "cancelled" }).eq("id", id);
-    if (error) return toast.error(error.message);
-    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, status: "cancelled" } : x)));
+  type Attendance = "attended" | "apologized" | "absent";
+  const setAppointmentAttendance = async (id: string, kind: Attendance) => {
     const appt = appointments.find((x) => x.id === id);
-    toast.success("تم تسجيل اعتذار الحالة", {
-      description: appt ? `${appt.case_name} · ${appt.scheduled_date} ${appt.scheduled_time.slice(0,5)}` : undefined,
-      duration: 6000,
-    });
+    if (!appt) return;
+
+    if (kind === "attended") {
+      // علم الحضور = الجلسة تمت → سجلها في جدول الجلسات (مرة واحدة)
+      const now = new Date().toISOString();
+      setAppointments((a) => a.map((x) => (x.id === id ? { ...x, status: "attended", ended_at: x.ended_at ?? now } : x)));
+      const { error } = await supabase
+        .from("appointments")
+        .update({ status: "attended", ended_at: appt.ended_at ?? now })
+        .eq("id", id);
+      if (error) { toast.error(error.message); return; }
+
+      let sCost = appt.cost != null ? Number(appt.cost) : 0;
+      let sPct = Number(appt.specialist_percentage) || 50;
+      let sDur = Number(appt.duration_minutes) || 45;
+      if (!sCost && appt.case_id) {
+        const { data: caseRow } = await supabase
+          .from("cases")
+          .select("default_cost, default_specialist_percentage, default_duration_minutes")
+          .eq("id", appt.case_id)
+          .maybeSingle();
+        if (caseRow) {
+          sCost = Number(caseRow.default_cost) || 0;
+          if (!appt.specialist_percentage) sPct = Number(caseRow.default_specialist_percentage) || 50;
+          sDur = Number(caseRow.default_duration_minutes) || sDur;
+        }
+      }
+      const { data: existing } = await supabase
+        .from("sessions")
+        .select("id")
+        .eq("specialist_id", appt.specialist_id)
+        .eq("case_name", appt.case_name)
+        .eq("session_date", appt.scheduled_date)
+        .eq("session_time", appt.scheduled_time)
+        .maybeSingle();
+      if (!existing) {
+        const { error: sErr } = await supabase.from("sessions").insert({
+          specialist_id: appt.specialist_id,
+          case_name: appt.case_name,
+          session_date: appt.scheduled_date,
+          session_time: appt.scheduled_time,
+          duration_minutes: sDur,
+          cost: sCost,
+          specialist_percentage: sPct,
+          session_type: appt.session_type,
+          test_type: appt.test_type,
+          notes: appt.notes,
+        });
+        if (sErr) { toast.error(sErr.message); return; }
+      }
+      toast.success("تم تسجيل الحضور ✅");
+      loadAll();
+      return;
+    }
+
+    // معتذرة / غائبة → امسح أي تسجيل سابق ولا تحتسبها في الإحصائيات
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, status: kind, started_at: null, ended_at: null } : x)));
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: kind, started_at: null, ended_at: null })
+      .eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    await supabase
+      .from("sessions")
+      .delete()
+      .eq("specialist_id", appt.specialist_id)
+      .eq("case_name", appt.case_name)
+      .eq("session_date", appt.scheduled_date)
+      .eq("session_time", appt.scheduled_time);
+    toast.success(kind === "apologized" ? "تم تسجيل اعتذار الحالة 🟠" : "تم تسجيل غياب الحالة 🔴");
+    loadAll();
   };
+
+  // متوافق مع الكود القديم
+  const markAppointmentCancelled = (id: string) => setAppointmentAttendance(id, "apologized");
+
 
   const removeAppointment = async (id: string) => {
     const { error } = await supabase.from("appointments").delete().eq("id", id);
@@ -629,8 +698,8 @@ export function Dashboard({ user }: { user: User }) {
                         onAction={() => useAppointment(a)}
                         onStart={() => startAppointment(a.id)}
                         onEnd={() => endAppointment(a.id)}
-                        onRevert={canManageSchedule && (a.started_at || a.ended_at) ? () => revertAppointment(a.id) : undefined}
-                        onCancel={a.status !== "cancelled" ? () => markAppointmentCancelled(a.id) : undefined}
+                        onRevert={(a.started_at || a.ended_at || a.status === "attended" || a.status === "apologized" || a.status === "absent" || a.status === "cancelled") ? () => revertAppointment(a.id) : undefined}
+                        onAttendance={(kind) => setAppointmentAttendance(a.id, kind)}
                       />
                     ))}
                   </div>
@@ -842,6 +911,8 @@ export function Dashboard({ user }: { user: User }) {
                       onCostChange={isAdmin ? (v) => updateAppointmentCost(a.id, v) : undefined}
                       onPercentageChange={isAdmin ? (v) => updateAppointmentPercentage(a.id, v) : undefined}
                       hideFinancial={isSupervisor}
+                      onAttendance={!isSupervisor ? (kind) => setAppointmentAttendance(a.id, kind) : undefined}
+                      onRevert={canManageSchedule ? () => revertAppointment(a.id) : undefined}
                       canWhatsApp
                     />
                   ))}
@@ -911,7 +982,7 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd, onRevert, canWhatsApp, specialistName,
+  a, subtitle, actionLabel, onAction, onRemove, onCancel, onAttendance, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd, onRevert, canWhatsApp, specialistName,
 }: {
   a: Appointment;
   subtitle?: string;
@@ -919,6 +990,7 @@ function AppointmentRow({
   onAction?: () => void;
   onRemove?: () => void;
   onCancel?: () => void;
+  onAttendance?: (kind: "attended" | "apologized" | "absent") => void;
   onCostChange?: (v: number) => void;
   onPercentageChange?: (v: number) => void;
   hideFinancial?: boolean;
@@ -931,23 +1003,35 @@ function AppointmentRow({
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
   const share = a.cost != null ? (Number(a.cost) * Number(a.specialist_percentage)) / 100 : null;
-  const isCancelled = a.status === "cancelled";
+  const isAttended = a.status === "attended";
+  const isApologized = a.status === "apologized" || a.status === "cancelled";
+  const isAbsent = a.status === "absent";
+  const isInactive = isApologized || isAbsent;
   const fmtT = (ts: string | null) => ts ? new Date(ts).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : null;
   const startedTxt = fmtT(a.started_at);
   const endedTxt = fmtT(a.ended_at);
+  const rowBg = isAttended
+    ? "bg-blue-500/10 border-blue-500/40"
+    : isApologized
+    ? "bg-orange-500/10 border-orange-500/40"
+    : isAbsent
+    ? "bg-red-500/10 border-red-500/40"
+    : "bg-muted/30";
   return (
-    <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border p-3 sm:flex-wrap ${isCancelled ? "bg-destructive/5 border-destructive/30" : "bg-muted/30"}`}>
+    <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border p-3 sm:flex-wrap ${rowBg}`}>
       <div className="w-full sm:flex-1 sm:min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`font-semibold ${isCancelled ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
-          {isCancelled && <span className="text-xs rounded bg-destructive/15 px-2 py-0.5 text-destructive font-semibold">اعتذرت</span>}
+          <span className={`font-semibold ${isInactive ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
+          {isAttended && <span className="text-xs rounded bg-blue-500/20 px-2 py-0.5 text-blue-700 font-semibold">حضرت</span>}
+          {isApologized && <span className="text-xs rounded bg-orange-500/20 px-2 py-0.5 text-orange-700 font-semibold">معتذرة</span>}
+          {isAbsent && <span className="text-xs rounded bg-red-500/20 px-2 py-0.5 text-red-700 font-semibold">غائبة</span>}
           {a.session_kind && a.session_kind !== "regular" && (
             <span className="text-xs rounded bg-amber-500/15 px-2 py-0.5 text-amber-700 font-semibold">
               {a.session_kind === "initial_assessment" ? "تقييم مبدئي" : a.session_kind === "test" ? "اختبار" : "تقييم دوري"}
             </span>
           )}
-          {startedTxt && !endedTxt && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary font-semibold">جارية</span>}
-          {endedTxt && <span className="text-xs rounded bg-emerald-500/15 px-2 py-0.5 text-emerald-600 font-semibold">منتهية</span>}
+          {!isInactive && !isAttended && startedTxt && !endedTxt && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary font-semibold">جارية</span>}
+          {!isInactive && !isAttended && endedTxt && <span className="text-xs rounded bg-emerald-500/15 px-2 py-0.5 text-emerald-600 font-semibold">منتهية</span>}
           {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
           {a.test_type && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary">{a.test_type}</span>}
           {subtitle && <span className="text-xs text-muted-foreground">— {subtitle}</span>}
@@ -989,18 +1073,46 @@ function AppointmentRow({
         </div>
       )}
       <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-      {onStart && !isCancelled && !a.started_at && (
+      {onAttendance && (
+        <>
+          <Button
+            size="sm"
+            variant={isAttended ? "default" : "outline"}
+            className={isAttended ? "bg-blue-600 hover:bg-blue-700 text-white" : "border-blue-500/50 text-blue-700 hover:bg-blue-500/10"}
+            onClick={() => onAttendance("attended")}
+          >
+            حضرت
+          </Button>
+          <Button
+            size="sm"
+            variant={isApologized ? "default" : "outline"}
+            className={isApologized ? "bg-orange-500 hover:bg-orange-600 text-white" : "border-orange-500/50 text-orange-700 hover:bg-orange-500/10"}
+            onClick={() => onAttendance("apologized")}
+          >
+            معتذرة
+          </Button>
+          <Button
+            size="sm"
+            variant={isAbsent ? "default" : "outline"}
+            className={isAbsent ? "bg-red-600 hover:bg-red-700 text-white" : "border-red-500/50 text-red-700 hover:bg-red-500/10"}
+            onClick={() => onAttendance("absent")}
+          >
+            غائبة
+          </Button>
+        </>
+      )}
+      {onStart && !isInactive && !isAttended && !a.started_at && (
         <Button size="sm" variant="default" onClick={onStart}>بدء الجلسة</Button>
       )}
-      {onEnd && !isCancelled && a.started_at && !a.ended_at && (
+      {onEnd && !isInactive && !isAttended && a.started_at && !a.ended_at && (
         <Button size="sm" variant="secondary" onClick={onEnd}>إنهاء الجلسة</Button>
       )}
-      {onRevert && (a.started_at || a.ended_at) && (
+      {onRevert && (a.started_at || a.ended_at || isInactive || isAttended) && (
         <Button size="sm" variant="outline" className="border-amber-500/40 text-amber-700 hover:bg-amber-500/10" onClick={onRevert}>
           إرجاع الجلسة
         </Button>
       )}
-      {actionLabel && onAction && !isCancelled && (
+      {actionLabel && onAction && !isInactive && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
       )}
       {canWhatsApp && a.case_whatsapp && (() => {
@@ -1024,7 +1136,7 @@ function AppointmentRow({
           </Button>
         );
       })()}
-      {onCancel && !isCancelled && (
+      {onCancel && !isInactive && !onAttendance && (
         <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10" onClick={onCancel}>
           اعتذرت اليوم
         </Button>
