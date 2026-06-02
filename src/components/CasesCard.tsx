@@ -49,6 +49,7 @@ type CaseRow = {
 const DAY_LABELS = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
 const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+const COST_PRESETS = [30, 75, 87.5, 100];
 const KIND_OPTIONS: { value: string; label: string }[] = [
   { value: "regular", label: "جلسة عادية" },
   { value: "assessment", label: "تقييم" },
@@ -98,6 +99,10 @@ export function CasesCard({
   const startEdit = (c: CaseRow) => {
     setEditingId(c.id);
     setEditDraft({ ...c });
+  };
+  const editCostPresetValue = (draft: CaseRow | null) => {
+    if (!draft) return "";
+    return COST_PRESETS.includes(Number(draft.default_cost)) ? String(draft.default_cost) : "custom";
   };
   const cancelEdit = () => { setEditingId(null); setEditDraft(null); };
   const toggleEditDay = (d: number) => {
@@ -164,6 +169,7 @@ export function CasesCard({
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState(45);
   const [cost, setCost] = useState<number | "">("");
+  const [costSelect, setCostSelect] = useState<string>("");
   const [percentage, setPercentage] = useState(50);
   const [sessionKind, setSessionKind] = useState<string>("regular");
   const [sessionSubtype, setSessionSubtype] = useState<string>(defaultSubtypeFor("regular"));
@@ -190,7 +196,7 @@ export function CasesCard({
   const toggleDay = (d: number) =>
     setDays((ds) => ds.includes(d) ? ds.filter((x) => x !== d) : [...ds, d].sort());
   const resetForm = () => {
-    setName(""); setWhatsapp(""); setDays([]); setCost("");
+    setName(""); setWhatsapp(""); setDays([]); setCost(""); setCostSelect("");
     setSessionKind("regular"); setSessionSubtype(defaultSubtypeFor("regular"));
     setShowForm(false);
   };
@@ -341,8 +347,30 @@ export function CasesCard({
             </div>
             <div className="space-y-1.5">
               <Label>سعر الجلسة</Label>
-              <Input type="number" min={0} step="0.01" required value={cost}
-                onChange={(e) => setCost(e.target.value === "" ? "" : +e.target.value)} placeholder="0" />
+              <Select
+                value={costSelect}
+                onValueChange={(v) => {
+                  setCostSelect(v);
+                  if (v !== "custom") setCost(Number(v));
+                  else setCost("");
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="اختر السعر..." /></SelectTrigger>
+                <SelectContent>
+                  {COST_PRESETS.map((c) => (
+                    <SelectItem key={c} value={String(c)}>{c}</SelectItem>
+                  ))}
+                  <SelectItem value="custom">قيمة أخرى</SelectItem>
+                </SelectContent>
+              </Select>
+              {costSelect === "custom" && (
+                <Input
+                  type="number" min={0} step="0.01" required
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value === "" ? "" : +e.target.value)}
+                  placeholder="اكتب السعر"
+                />
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>نسبة الأخصائي</Label>
@@ -506,8 +534,29 @@ export function CasesCard({
                     </div>
                     <div className="space-y-1.5">
                       <Label>سعر الجلسة</Label>
-                      <Input type="number" min={0} step="0.01" value={editDraft.default_cost}
-                        onChange={(e) => setEditDraft({ ...editDraft, default_cost: e.target.value === "" ? 0 : +e.target.value })} />
+                      <Select
+                        value={editCostPresetValue(editDraft)}
+                        onValueChange={(v) => {
+                          if (v !== "custom") setEditDraft({ ...editDraft, default_cost: Number(v) });
+                          else setEditDraft({ ...editDraft, default_cost: 0 });
+                        }}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {COST_PRESETS.map((c) => (
+                            <SelectItem key={c} value={String(c)}>{c}</SelectItem>
+                          ))}
+                          <SelectItem value="custom">قيمة أخرى</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {editCostPresetValue(editDraft) === "custom" && (
+                        <Input
+                          type="number" min={0} step="0.01"
+                          value={editDraft.default_cost || ""}
+                          onChange={(e) => setEditDraft({ ...editDraft, default_cost: e.target.value === "" ? 0 : +e.target.value })}
+                          placeholder="اكتب السعر"
+                        />
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <Label>نسبة الأخصائي</Label>

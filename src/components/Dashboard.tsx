@@ -69,6 +69,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const DURATION_OPTIONS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const PERCENTAGE_OPTIONS = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+const COST_PRESETS = [30, 75, 87.5, 100];
 const TESTS_LABEL = "اختبارات";
 const SESSION_TYPES = ["تخاطب", "تأهيل", "تأسيس أكاديمي", "تعديل سلوك", "تنمية مهارات", "صعوبات تعلم", "علاج وظيفي", "تقييم", TESTS_LABEL];
 const TEST_TYPES = [
@@ -145,6 +146,7 @@ export function Dashboard({ user }: { user: User }) {
   const [aType, setAType] = useState(SESSION_TYPES[0]);
   const [aTestType, setATestType] = useState(TEST_TYPES[0]);
   const [aCost, setACost] = useState<number | "">("");
+  const [aCostSelect, setACostSelect] = useState<string>("");
   const [aPercentage, setAPercentage] = useState(50);
   const [aNotes, setANotes] = useState("");
   const [aCaseWhatsapp, setACaseWhatsapp] = useState("");
@@ -280,7 +282,7 @@ export function Dashboard({ user }: { user: User }) {
     setASubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تم إضافة الموعد للجدول");
-    setACase(""); setANotes(""); setACost(""); setACaseWhatsapp(""); setASessionKind("regular");
+    setACase(""); setANotes(""); setACost(""); setACostSelect(""); setACaseWhatsapp(""); setASessionKind("regular");
     loadAll();
   };
 
@@ -919,7 +921,30 @@ export function Dashboard({ user }: { user: User }) {
                   <>
                     <div className="space-y-2">
                       <Label>تكلفة الجلسة (ما يدفعه الطفل)</Label>
-                      <Input type="number" min={0} step="0.01" value={aCost} onChange={(e) => setACost(e.target.value === "" ? "" : +e.target.value)} placeholder="0" />
+                      <Select
+                        value={aCostSelect}
+                        onValueChange={(v) => {
+                          setACostSelect(v);
+                          if (v !== "custom") setACost(Number(v));
+                          else setACost("");
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="اختر السعر..." /></SelectTrigger>
+                        <SelectContent>
+                          {COST_PRESETS.map((c) => (
+                            <SelectItem key={c} value={String(c)}>{c}</SelectItem>
+                          ))}
+                          <SelectItem value="custom">قيمة أخرى</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {aCostSelect === "custom" && (
+                        <Input
+                          type="number" min={0} step="0.01"
+                          value={aCost}
+                          onChange={(e) => setACost(e.target.value === "" ? "" : +e.target.value)}
+                          placeholder="اكتب السعر"
+                        />
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>نسبة الأخصائي</Label>
