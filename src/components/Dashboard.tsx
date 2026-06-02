@@ -293,6 +293,14 @@ export function Dashboard({ user }: { user: User }) {
     else toast.success("تم تسجيل نهاية الجلسة");
   };
 
+  const revertAppointment = async (id: string) => {
+    if (!confirm("هل تريد إرجاع الجلسة؟ سيتم مسح وقت البدء والانتهاء.")) return;
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, started_at: null, ended_at: null, status: "scheduled" } : x)));
+    const { error } = await supabase.from("appointments").update({ started_at: null, ended_at: null, status: "scheduled" }).eq("id", id);
+    if (error) toast.error(error.message);
+    else toast.success("تم إرجاع الجلسة");
+  };
+
   const updateAppointmentCost = async (id: string, value: number) => {
     setAppointments((a) => a.map((x) => (x.id === id ? { ...x, cost: value } : x)));
     const { error } = await supabase.from("appointments").update({ cost: value }).eq("id", id);
@@ -544,6 +552,7 @@ export function Dashboard({ user }: { user: User }) {
                         onAction={() => useAppointment(a)}
                         onStart={() => startAppointment(a.id)}
                         onEnd={() => endAppointment(a.id)}
+                        onRevert={canManageSchedule && (a.started_at || a.ended_at) ? () => revertAppointment(a.id) : undefined}
                         onCancel={a.status !== "cancelled" ? () => markAppointmentCancelled(a.id) : undefined}
                       />
                     ))}
@@ -825,7 +834,7 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd, canWhatsApp, specialistName,
+  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd, onRevert, canWhatsApp, specialistName,
 }: {
   a: Appointment;
   subtitle?: string;
@@ -838,6 +847,7 @@ function AppointmentRow({
   hideFinancial?: boolean;
   onStart?: () => void;
   onEnd?: () => void;
+  onRevert?: () => void;
   canWhatsApp?: boolean;
   specialistName?: string;
 }) {
@@ -907,6 +917,11 @@ function AppointmentRow({
       )}
       {onEnd && !isCancelled && a.started_at && !a.ended_at && (
         <Button size="sm" variant="secondary" onClick={onEnd}>إنهاء الجلسة</Button>
+      )}
+      {onRevert && (a.started_at || a.ended_at) && (
+        <Button size="sm" variant="outline" className="border-amber-500/40 text-amber-700 hover:bg-amber-500/10" onClick={onRevert}>
+          إرجاع الجلسة
+        </Button>
       )}
       {actionLabel && onAction && !isCancelled && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
