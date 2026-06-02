@@ -101,8 +101,17 @@ export function Dashboard({ user }: { user: User }) {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("cases").select("name").order("name");
-      const names = Array.from(new Set(((data as { name: string }[] | null) || []).map((c) => c.name).filter(Boolean)));
+      const [casesRes, apptsRes, sessRes] = await Promise.all([
+        supabase.from("cases").select("name"),
+        supabase.from("appointments").select("case_name"),
+        supabase.from("sessions").select("case_name"),
+      ]);
+      const all: string[] = [
+        ...((casesRes.data as { name: string }[] | null) || []).map((c) => c.name),
+        ...((apptsRes.data as { case_name: string }[] | null) || []).map((a) => a.case_name),
+        ...((sessRes.data as { case_name: string }[] | null) || []).map((s) => s.case_name),
+      ];
+      const names = Array.from(new Set(all.map((n) => (n || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ar"));
       setCaseNames(names);
     })();
   }, [sessions, appointments]);
