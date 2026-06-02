@@ -161,6 +161,34 @@ export function CasesCard({
     }
   };
 
+  const markCaseAbsentToday = async (c: CaseRow) => {
+    const todayStr = today();
+    const { data: existing, error: qErr } = await supabase
+      .from("appointments")
+      .select("id, status")
+      .eq("case_id", c.id)
+      .eq("scheduled_date", todayStr)
+      .order("scheduled_time", { ascending: true })
+      .limit(1);
+    if (qErr) { toast.error(qErr.message); return; }
+    const row = existing?.[0];
+    if (!row) {
+      toast.error("لا يوجد موعد لهذه الحالة اليوم");
+      return;
+    }
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "absent", started_at: null, ended_at: null })
+      .eq("id", row.id);
+    if (error) { toast.error(error.message); return; }
+    setAppts((a) => {
+      const list = a[c.id];
+      if (!list) return a;
+      return { ...a, [c.id]: list.map((x) => x.id === row.id ? { ...x, status: "absent" } : x) };
+    });
+    toast.success("تم تسجيل غياب الحالة اليوم 🔴");
+  };
+
   // form
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -440,6 +468,16 @@ export function CasesCard({
                       المواعيد
                       {expanded[c.id] ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
                     </Button>
+                    {role === "specialist" && c.specialist_id === user.id && c.active && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-500/50 text-red-700 hover:bg-red-500/10"
+                        onClick={() => markCaseAbsentToday(c)}
+                      >
+                        غائبة اليوم
+                      </Button>
+                    )}
                     {canManage && c.whatsapp && (() => {
                       const todayStr = new Date().toISOString().slice(0, 10);
                       const next = (appts[c.id] || []).find((a) => a.scheduled_date >= todayStr && a.status !== "cancelled");
