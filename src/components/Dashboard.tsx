@@ -188,29 +188,29 @@ export function Dashboard({ user }: { user: User }) {
 
   const addSession = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (cost === "" || cost < 0) return toast.error("أدخل تكلفة صحيحة");
+    if (!caseName.trim()) return toast.error("أدخل اسم الطفل");
     setSubmitting(true);
+    const nowTime = new Date().toTimeString().slice(0, 5);
     const { error } = await supabase.from("sessions").insert({
       specialist_id: user.id,
       case_name: caseName.trim(),
       session_date: sDate,
-      session_time: sTime,
-      duration_minutes: duration,
-      cost: Number(cost),
-      specialist_percentage: percentage,
-      session_type: sType,
-      test_type: sType === TESTS_LABEL ? sTestType : null,
+      session_time: nowTime,
+      duration_minutes: 45,
+      cost: 0,
+      specialist_percentage: 50,
+      session_type: null,
+      test_type: null,
       notes: sNotes.trim() || null,
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
     const savedName = caseName.trim();
-    const typeLabel = sType === TESTS_LABEL ? `${sType} - ${sTestType}` : sType;
     toast.success("تم تسجيل الجلسة بنجاح ✅", {
-      description: `الحالة: ${savedName} · ${typeLabel} · ${sDate} الساعة ${sTime} · ${duration} دقيقة · التكلفة ${Number(cost).toFixed(2)}`,
-      duration: 6000,
+      description: `الحالة: ${savedName} · ${sDate}`,
+      duration: 5000,
     });
-    setCaseName(""); setCost(""); setSNotes("");
+    setCaseName(""); setSNotes("");
     loadAll();
   };
 
