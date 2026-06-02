@@ -343,8 +343,30 @@ export function CasesCard({
             </div>
             <div className="space-y-1.5">
               <Label>سعر الجلسة</Label>
-              <Input type="number" min={0} step="0.01" required value={cost}
-                onChange={(e) => setCost(e.target.value === "" ? "" : +e.target.value)} placeholder="0" />
+              <Select
+                value={costSelect}
+                onValueChange={(v) => {
+                  setCostSelect(v);
+                  if (v !== "custom") setCost(Number(v));
+                  else setCost("");
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="اختر السعر..." /></SelectTrigger>
+                <SelectContent>
+                  {COST_PRESETS.map((c) => (
+                    <SelectItem key={c} value={String(c)}>{c}</SelectItem>
+                  ))}
+                  <SelectItem value="custom">قيمة أخرى</SelectItem>
+                </SelectContent>
+              </Select>
+              {costSelect === "custom" && (
+                <Input
+                  type="number" min={0} step="0.01" required
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value === "" ? "" : +e.target.value)}
+                  placeholder="اكتب السعر"
+                />
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>نسبة الأخصائي</Label>
