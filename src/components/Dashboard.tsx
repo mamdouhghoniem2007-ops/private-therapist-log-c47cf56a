@@ -293,6 +293,14 @@ export function Dashboard({ user }: { user: User }) {
     else toast.success("تم تسجيل نهاية الجلسة");
   };
 
+  const revertAppointment = async (id: string) => {
+    if (!confirm("هل تريد إرجاع الجلسة؟ سيتم مسح وقت البدء والانتهاء.")) return;
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, started_at: null, ended_at: null, status: "scheduled" } : x)));
+    const { error } = await supabase.from("appointments").update({ started_at: null, ended_at: null, status: "scheduled" }).eq("id", id);
+    if (error) toast.error(error.message);
+    else toast.success("تم إرجاع الجلسة");
+  };
+
   const updateAppointmentCost = async (id: string, value: number) => {
     setAppointments((a) => a.map((x) => (x.id === id ? { ...x, cost: value } : x)));
     const { error } = await supabase.from("appointments").update({ cost: value }).eq("id", id);
