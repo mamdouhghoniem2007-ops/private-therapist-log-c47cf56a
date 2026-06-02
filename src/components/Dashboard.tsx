@@ -1001,23 +1001,35 @@ function AppointmentRow({
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
   const share = a.cost != null ? (Number(a.cost) * Number(a.specialist_percentage)) / 100 : null;
-  const isCancelled = a.status === "cancelled";
+  const isAttended = a.status === "attended";
+  const isApologized = a.status === "apologized" || a.status === "cancelled";
+  const isAbsent = a.status === "absent";
+  const isInactive = isApologized || isAbsent;
   const fmtT = (ts: string | null) => ts ? new Date(ts).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : null;
   const startedTxt = fmtT(a.started_at);
   const endedTxt = fmtT(a.ended_at);
+  const rowBg = isAttended
+    ? "bg-blue-500/10 border-blue-500/40"
+    : isApologized
+    ? "bg-orange-500/10 border-orange-500/40"
+    : isAbsent
+    ? "bg-red-500/10 border-red-500/40"
+    : "bg-muted/30";
   return (
-    <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border p-3 sm:flex-wrap ${isCancelled ? "bg-destructive/5 border-destructive/30" : "bg-muted/30"}`}>
+    <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border p-3 sm:flex-wrap ${rowBg}`}>
       <div className="w-full sm:flex-1 sm:min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`font-semibold ${isCancelled ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
-          {isCancelled && <span className="text-xs rounded bg-destructive/15 px-2 py-0.5 text-destructive font-semibold">اعتذرت</span>}
+          <span className={`font-semibold ${isInactive ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
+          {isAttended && <span className="text-xs rounded bg-blue-500/20 px-2 py-0.5 text-blue-700 font-semibold">حضرت</span>}
+          {isApologized && <span className="text-xs rounded bg-orange-500/20 px-2 py-0.5 text-orange-700 font-semibold">معتذرة</span>}
+          {isAbsent && <span className="text-xs rounded bg-red-500/20 px-2 py-0.5 text-red-700 font-semibold">غائبة</span>}
           {a.session_kind && a.session_kind !== "regular" && (
             <span className="text-xs rounded bg-amber-500/15 px-2 py-0.5 text-amber-700 font-semibold">
               {a.session_kind === "initial_assessment" ? "تقييم مبدئي" : a.session_kind === "test" ? "اختبار" : "تقييم دوري"}
             </span>
           )}
-          {startedTxt && !endedTxt && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary font-semibold">جارية</span>}
-          {endedTxt && <span className="text-xs rounded bg-emerald-500/15 px-2 py-0.5 text-emerald-600 font-semibold">منتهية</span>}
+          {!isInactive && !isAttended && startedTxt && !endedTxt && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary font-semibold">جارية</span>}
+          {!isInactive && !isAttended && endedTxt && <span className="text-xs rounded bg-emerald-500/15 px-2 py-0.5 text-emerald-600 font-semibold">منتهية</span>}
           {a.session_type && <span className="text-xs rounded bg-accent/20 px-2 py-0.5 text-accent-foreground">{a.session_type}</span>}
           {a.test_type && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary">{a.test_type}</span>}
           {subtitle && <span className="text-xs text-muted-foreground">— {subtitle}</span>}
