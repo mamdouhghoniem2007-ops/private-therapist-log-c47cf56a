@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog, Download, MessageCircle } from "lucide-react";
+import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog, Download, MessageCircle, Printer } from "lucide-react";
 import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 import logo from "@/assets/logo.png";
 import { AttendanceCard } from "@/components/AttendanceCard";
