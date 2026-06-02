@@ -304,10 +304,59 @@ export function Dashboard({ user }: { user: User }) {
 
   const endAppointment = async (id: string) => {
     const now = new Date().toISOString();
-    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, ended_at: now } : x)));
-    const { error } = await supabase.from("appointments").update({ ended_at: now }).eq("id", id);
-    if (error) toast.error(error.message);
-    else toast.success("تم تسجيل نهاية الجلسة");
+    const appt = appointments.find((x) => x.id === id);
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, ended_at: now, status: "completed" } : x)));
+    const { error } = await supabase.from("appointments").update({ ended_at: now, status: "completed" }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+
+    // سجّل الجلسة في جدول الجلسات بنصيب الأخصائي ونصيب المركز (مرة واحدة فقط)
+    if (appt) {
+      let sCost = appt.cost != null ? Number(appt.cost) : 0;
+      let sPct = Number(appt.specialist_percentage) || 50;
+      let sDur = Number(appt.duration_minutes) || 45;
+
+      if (!sCost && appt.case_id) {
+        const { data: caseRow } = await supabase
+          .from("cases")
+          .select("default_cost, default_specialist_percentage, default_duration_minutes")
+          .eq("id", appt.case_id)
+          .maybeSingle();
+        if (caseRow) {
+          sCost = Number(caseRow.default_cost) || 0;
+          if (!appt.specialist_percentage) sPct = Number(caseRow.default_specialist_percentage) || 50;
+          sDur = Number(caseRow.default_duration_minutes) || sDur;
+        }
+      }
+
+      // تجنّب التكرار: تحقّق أنه لا توجد جلسة لنفس الحالة في نفس التاريخ والوقت
+      const { data: existing } = await supabase
+        .from("sessions")
+        .select("id")
+        .eq("specialist_id", appt.specialist_id)
+        .eq("case_name", appt.case_name)
+        .eq("session_date", appt.scheduled_date)
+        .eq("session_time", appt.scheduled_time)
+        .maybeSingle();
+
+      if (!existing) {
+        const { error: sErr } = await supabase.from("sessions").insert({
+          specialist_id: appt.specialist_id,
+          case_name: appt.case_name,
+          session_date: appt.scheduled_date,
+          session_time: appt.scheduled_time,
+          duration_minutes: sDur,
+          cost: sCost,
+          specialist_percentage: sPct,
+          session_type: appt.session_type,
+          test_type: appt.test_type,
+          notes: appt.notes,
+        });
+        if (sErr) { toast.error(sErr.message); return; }
+      }
+    }
+
+    toast.success("تم تسجيل نهاية الجلسة وحفظها في السجل ✅");
+    loadAll();
   };
 
   const revertAppointment = async (id: string) => {
