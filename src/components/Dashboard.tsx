@@ -911,6 +911,8 @@ export function Dashboard({ user }: { user: User }) {
                       onCostChange={isAdmin ? (v) => updateAppointmentCost(a.id, v) : undefined}
                       onPercentageChange={isAdmin ? (v) => updateAppointmentPercentage(a.id, v) : undefined}
                       hideFinancial={isSupervisor}
+                      onAttendance={!isSupervisor ? (kind) => setAppointmentAttendance(a.id, kind) : undefined}
+                      onRevert={canManageSchedule ? () => revertAppointment(a.id) : undefined}
                       canWhatsApp
                     />
                   ))}
