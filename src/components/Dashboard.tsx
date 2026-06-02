@@ -643,6 +643,106 @@ export function Dashboard({ user }: { user: User }) {
     toast.success("تم تنزيل الشيت الشهري");
   };
 
+  const buildPrintHtml = (title: string, rows: Session[], showSummary: boolean) => {
+    const totalCost = rows.reduce((s, x) => s + Number(x.cost), 0);
+    const specShare = rows.reduce((s, x) => s + (Number(x.cost) * Number(x.specialist_percentage)) / 100, 0);
+    const centerShare = totalCost - specShare;
+
+    const bodyRows = rows.map((s) => {
+      const cost = Number(s.cost);
+      const share = (cost * Number(s.specialist_percentage)) / 100;
+      const a = apptMap[`${s.specialist_id}|${s.case_name}|${s.session_date}`];
+      return `<tr>
+        <td>${s.session_date}</td>
+        <td>${(s.session_time || "").slice(0, 5)}</td>
+        <td>${fmtT(a?.started_at)}</td>
+        <td>${fmtT(a?.ended_at)}</td>
+        <td>${profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—")}</td>
+        <td>${s.case_name}</td>
+        <td>${s.session_type || ""}</td>
+        <td>${s.test_type || ""}</td>
+        <td>${s.duration_minutes}</td>
+        <td>${cost.toFixed(2)}</td>
+        <td>${s.specialist_percentage}%</td>
+        <td>${share.toFixed(2)}</td>
+        <td>${(cost - share).toFixed(2)}</td>
+        <td>${(s.notes || "").replace(/</g, "&lt;")}</td>
+      </tr>`;
+    }).join("");
+
+    let summaryHtml = "";
+    if (showSummary) {
+      const sum: Record<string, { name: string; count: number; total: number; share: number }> = {};
+      for (const s of rows) {
+        const name = profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—");
+        if (!sum[s.specialist_id]) sum[s.specialist_id] = { name, count: 0, total: 0, share: 0 };
+        const c = Number(s.cost);
+        sum[s.specialist_id].count += 1;
+        sum[s.specialist_id].total += c;
+        sum[s.specialist_id].share += (c * Number(s.specialist_percentage)) / 100;
+      }
+      summaryHtml = `<h3>ملخص حسب الأخصائي</h3>
+      <table><thead><tr><th>الأخصائي</th><th>عدد الجلسات</th><th>الإجمالي</th><th>نصيب الأخصائي</th><th>نصيب المركز</th></tr></thead>
+      <tbody>${Object.values(sum).map((g) => `<tr><td>${g.name}</td><td>${g.count}</td><td>${g.total.toFixed(2)}</td><td>${g.share.toFixed(2)}</td><td>${(g.total - g.share).toFixed(2)}</td></tr>`).join("")}</tbody></table>`;
+    }
+
+    return `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:20px;color:#111}
+      h1{margin:0 0 4px;font-size:20px}
+      h3{margin:18px 0 6px;font-size:15px}
+      .meta{color:#555;font-size:12px;margin-bottom:12px}
+      table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+      th,td{border:1px solid #999;padding:5px 6px;text-align:center}
+      thead{background:#f0f0f0}
+      tfoot td{font-weight:bold;background:#fafafa}
+      .totals{margin-top:14px;display:flex;gap:18px;flex-wrap:wrap;font-size:13px}
+      .totals div{border:1px solid #ccc;padding:6px 12px;border-radius:6px}
+      @media print { .noprint{display:none} body{padding:10px} }
+    </style></head><body>
+    <h1>${title}</h1>
+    <div class="meta">تاريخ الطباعة: ${new Date().toLocaleString("ar-EG")} — عدد الجلسات: ${rows.length}</div>
+    ${summaryHtml}
+    <h3>تفاصيل الجلسات</h3>
+    <table>
+      <thead><tr>${sessionHeaders.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${bodyRows || `<tr><td colspan="${sessionHeaders.length}">لا توجد جلسات</td></tr>`}</tbody>
+    </table>
+    <div class="totals">
+      <div>الإجمالي: <b>${totalCost.toFixed(2)}</b></div>
+      <div>نصيب الأخصائيين: <b>${specShare.toFixed(2)}</b></div>
+      <div>نصيب المركز: <b>${centerShare.toFixed(2)}</b></div>
+    </div>
+    <div class="noprint" style="margin-top:18px;text-align:center">
+      <button onclick="window.print()" style="padding:8px 20px;font-size:14px;cursor:pointer">طباعة</button>
+    </div>
+    <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
+    </body></html>`;
+  };
+
+  const openPrintWindow = (html: string) => {
+    const w = window.open("", "_blank");
+    if (!w) { toast.error("فشل فتح نافذة الطباعة"); return; }
+    w.document.write(html);
+    w.document.close();
+  };
+
+  const printDailySheet = () => {
+    openPrintWindow(buildPrintHtml(`شيت جلسات يوم ${filterDate}`, dayRows, isAdmin));
+  };
+
+  const printMonthlySheet = async () => {
+    const [y, m] = filterDate.split("-").map(Number);
+    const first = `${y}-${String(m).padStart(2, "0")}-01`;
+    const last = new Date(y, m, 0).toISOString().slice(0, 10);
+    const { data, error } = await supabase
+      .from("sessions").select("*")
+      .gte("session_date", first).lte("session_date", last)
+      .order("session_date").order("session_time");
+    if (error) return toast.error(error.message);
+    openPrintWindow(buildPrintHtml(`شيت جلسات شهر ${y}-${String(m).padStart(2, "0")}`, (data as Session[]) || [], isAdmin));
+  };
+
   return (
     <div className="min-h-screen">
       <datalist id="case-names-list">
