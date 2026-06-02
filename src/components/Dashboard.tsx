@@ -927,6 +927,7 @@ function AppointmentRow({
           </Select>
         </div>
       )}
+      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
       {onStart && !isCancelled && !a.started_at && (
         <Button size="sm" variant="default" onClick={onStart}>بدء الجلسة</Button>
       )}
@@ -967,6 +968,7 @@ function AppointmentRow({
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
       )}
+      </div>
     </div>
   );
 }
