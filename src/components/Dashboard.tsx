@@ -921,7 +921,30 @@ export function Dashboard({ user }: { user: User }) {
                   <>
                     <div className="space-y-2">
                       <Label>تكلفة الجلسة (ما يدفعه الطفل)</Label>
-                      <Input type="number" min={0} step="0.01" value={aCost} onChange={(e) => setACost(e.target.value === "" ? "" : +e.target.value)} placeholder="0" />
+                      <Select
+                        value={aCostSelect}
+                        onValueChange={(v) => {
+                          setACostSelect(v);
+                          if (v !== "custom") setACost(Number(v));
+                          else setACost("");
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="اختر السعر..." /></SelectTrigger>
+                        <SelectContent>
+                          {COST_PRESETS.map((c) => (
+                            <SelectItem key={c} value={String(c)}>{c}</SelectItem>
+                          ))}
+                          <SelectItem value="custom">قيمة أخرى</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {aCostSelect === "custom" && (
+                        <Input
+                          type="number" min={0} step="0.01"
+                          value={aCost}
+                          onChange={(e) => setACost(e.target.value === "" ? "" : +e.target.value)}
+                          placeholder="اكتب السعر"
+                        />
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>نسبة الأخصائي</Label>
