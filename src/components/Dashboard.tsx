@@ -111,7 +111,14 @@ export function Dashboard({ user }: { user: User }) {
         ...((apptsRes.data as { case_name: string }[] | null) || []).map((a) => a.case_name),
         ...((sessRes.data as { case_name: string }[] | null) || []).map((s) => s.case_name),
       ];
-      const names = Array.from(new Set(all.map((n) => (n || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ar"));
+      const seen = new Map<string, string>();
+      for (const raw of all) {
+        const trimmed = (raw || "").trim();
+        if (!trimmed) continue;
+        const key = trimmed.toLocaleLowerCase("ar").replace(/\s+/g, " ");
+        if (!seen.has(key)) seen.set(key, trimmed);
+      }
+      const names = Array.from(seen.values()).sort((a, b) => a.localeCompare(b, "ar"));
       setCaseNames(names);
     })();
   }, [sessions, appointments]);
