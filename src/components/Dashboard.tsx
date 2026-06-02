@@ -875,8 +875,8 @@ function AppointmentRow({
   const startedTxt = fmtT(a.started_at);
   const endedTxt = fmtT(a.ended_at);
   return (
-    <div className={`flex items-center justify-between gap-3 rounded-lg border p-3 flex-wrap ${isCancelled ? "bg-destructive/5 border-destructive/30" : "bg-muted/30"}`}>
-      <div className="flex-1 min-w-0">
+    <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border p-3 sm:flex-wrap ${isCancelled ? "bg-destructive/5 border-destructive/30" : "bg-muted/30"}`}>
+      <div className="w-full sm:flex-1 sm:min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`font-semibold ${isCancelled ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
           {isCancelled && <span className="text-xs rounded bg-destructive/15 px-2 py-0.5 text-destructive font-semibold">اعتذرت</span>}
