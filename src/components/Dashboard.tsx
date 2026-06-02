@@ -146,6 +146,7 @@ export function Dashboard({ user }: { user: User }) {
   const [aType, setAType] = useState(SESSION_TYPES[0]);
   const [aTestType, setATestType] = useState(TEST_TYPES[0]);
   const [aCost, setACost] = useState<number | "">("");
+  const [aCostSelect, setACostSelect] = useState<string>("");
   const [aPercentage, setAPercentage] = useState(50);
   const [aNotes, setANotes] = useState("");
   const [aCaseWhatsapp, setACaseWhatsapp] = useState("");
