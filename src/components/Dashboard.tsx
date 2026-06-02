@@ -830,7 +830,8 @@ export function Dashboard({ user }: { user: User }) {
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label>التاريخ</Label>
-                    <Input type="date" required value={sDate} onChange={(e) => setSDate(e.target.value)} />
+                    <Input type="date" value={today()} disabled readOnly />
+                    <p className="text-xs text-muted-foreground">يُسجَّل تاريخ اليوم تلقائيًا</p>
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label>ما تم خلال الجلسة</Label>
