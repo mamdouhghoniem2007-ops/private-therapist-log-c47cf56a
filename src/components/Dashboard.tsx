@@ -97,6 +97,15 @@ export function Dashboard({ user }: { user: User }) {
   const [allRoles, setAllRoles] = useState<Record<string, Role>>({});
   const [filterDate, setFilterDate] = useState(today());
   const [loading, setLoading] = useState(true);
+  const [caseNames, setCaseNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("cases").select("name").order("name");
+      const names = Array.from(new Set(((data as { name: string }[] | null) || []).map((c) => c.name).filter(Boolean)));
+      setCaseNames(names);
+    })();
+  }, [sessions, appointments]);
 
   // session form (specialist)
   const [caseName, setCaseName] = useState("");
