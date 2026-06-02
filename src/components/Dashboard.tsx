@@ -980,7 +980,7 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove, onCancel, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd, onRevert, canWhatsApp, specialistName,
+  a, subtitle, actionLabel, onAction, onRemove, onCancel, onAttendance, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd, onRevert, canWhatsApp, specialistName,
 }: {
   a: Appointment;
   subtitle?: string;
@@ -988,6 +988,7 @@ function AppointmentRow({
   onAction?: () => void;
   onRemove?: () => void;
   onCancel?: () => void;
+  onAttendance?: (kind: "attended" | "apologized" | "absent") => void;
   onCostChange?: (v: number) => void;
   onPercentageChange?: (v: number) => void;
   hideFinancial?: boolean;
