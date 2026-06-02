@@ -111,7 +111,14 @@ export function Dashboard({ user }: { user: User }) {
         ...((apptsRes.data as { case_name: string }[] | null) || []).map((a) => a.case_name),
         ...((sessRes.data as { case_name: string }[] | null) || []).map((s) => s.case_name),
       ];
-      const names = Array.from(new Set(all.map((n) => (n || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ar"));
+      const seen = new Map<string, string>();
+      for (const raw of all) {
+        const trimmed = (raw || "").trim();
+        if (!trimmed) continue;
+        const key = trimmed.toLocaleLowerCase("ar").replace(/\s+/g, " ");
+        if (!seen.has(key)) seen.set(key, trimmed);
+      }
+      const names = Array.from(seen.values()).sort((a, b) => a.localeCompare(b, "ar"));
       setCaseNames(names);
     })();
   }, [sessions, appointments]);
@@ -227,10 +234,11 @@ export function Dashboard({ user }: { user: User }) {
       sDur = Number(caseRow.default_duration_minutes) || 45;
     }
 
+    const todayStr = today();
     const { error } = await supabase.from("sessions").insert({
       specialist_id: user.id,
       case_name: name,
-      session_date: sDate,
+      session_date: todayStr,
       session_time: nowTime,
       duration_minutes: sDur,
       cost: sCost,
@@ -242,7 +250,7 @@ export function Dashboard({ user }: { user: User }) {
     setSubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تم تسجيل الجلسة بنجاح ✅", {
-      description: `الحالة: ${name} · ${sDate}${caseRow ? "" : " · تنبيه: لا يوجد ملف حالة بهذا الاسم، السعر = 0"}`,
+      description: `الحالة: ${name} · ${todayStr}${caseRow ? "" : " · تنبيه: لا يوجد ملف حالة بهذا الاسم، السعر = 0"}`,
       duration: 5000,
     });
     setCaseName(""); setSNotes("");
@@ -822,7 +830,8 @@ export function Dashboard({ user }: { user: User }) {
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label>التاريخ</Label>
-                    <Input type="date" required value={sDate} onChange={(e) => setSDate(e.target.value)} />
+                    <Input type="date" value={today()} disabled readOnly />
+                    <p className="text-xs text-muted-foreground">يُسجَّل تاريخ اليوم تلقائيًا</p>
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label>ما تم خلال الجلسة</Label>
