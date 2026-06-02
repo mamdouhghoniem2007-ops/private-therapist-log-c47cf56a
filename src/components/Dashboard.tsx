@@ -479,6 +479,8 @@ export function Dashboard({ user }: { user: User }) {
     if (a.cost != null) {
       const c = Number(a.cost);
       setCost(c);
+      setACost(c);
+      setACostSelect(COST_PRESETS.includes(c) ? String(c) : "custom");
     }
     if (a.specialist_percentage != null) setPercentage(Number(a.specialist_percentage));
     window.scrollTo({ top: 0, behavior: "smooth" });
