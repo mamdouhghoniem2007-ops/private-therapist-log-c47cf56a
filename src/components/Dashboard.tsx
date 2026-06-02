@@ -1071,18 +1071,46 @@ function AppointmentRow({
         </div>
       )}
       <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-      {onStart && !isCancelled && !a.started_at && (
+      {onAttendance && (
+        <>
+          <Button
+            size="sm"
+            variant={isAttended ? "default" : "outline"}
+            className={isAttended ? "bg-blue-600 hover:bg-blue-700 text-white" : "border-blue-500/50 text-blue-700 hover:bg-blue-500/10"}
+            onClick={() => onAttendance("attended")}
+          >
+            حضرت
+          </Button>
+          <Button
+            size="sm"
+            variant={isApologized ? "default" : "outline"}
+            className={isApologized ? "bg-orange-500 hover:bg-orange-600 text-white" : "border-orange-500/50 text-orange-700 hover:bg-orange-500/10"}
+            onClick={() => onAttendance("apologized")}
+          >
+            معتذرة
+          </Button>
+          <Button
+            size="sm"
+            variant={isAbsent ? "default" : "outline"}
+            className={isAbsent ? "bg-red-600 hover:bg-red-700 text-white" : "border-red-500/50 text-red-700 hover:bg-red-500/10"}
+            onClick={() => onAttendance("absent")}
+          >
+            غائبة
+          </Button>
+        </>
+      )}
+      {onStart && !isInactive && !isAttended && !a.started_at && (
         <Button size="sm" variant="default" onClick={onStart}>بدء الجلسة</Button>
       )}
-      {onEnd && !isCancelled && a.started_at && !a.ended_at && (
+      {onEnd && !isInactive && !isAttended && a.started_at && !a.ended_at && (
         <Button size="sm" variant="secondary" onClick={onEnd}>إنهاء الجلسة</Button>
       )}
-      {onRevert && (a.started_at || a.ended_at) && (
+      {onRevert && (a.started_at || a.ended_at || isInactive || isAttended) && (
         <Button size="sm" variant="outline" className="border-amber-500/40 text-amber-700 hover:bg-amber-500/10" onClick={onRevert}>
           إرجاع الجلسة
         </Button>
       )}
-      {actionLabel && onAction && !isCancelled && (
+      {actionLabel && onAction && !isInactive && (
         <Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button>
       )}
       {canWhatsApp && a.case_whatsapp && (() => {
@@ -1106,7 +1134,7 @@ function AppointmentRow({
           </Button>
         );
       })()}
-      {onCancel && !isCancelled && (
+      {onCancel && !isInactive && !onAttendance && (
         <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10" onClick={onCancel}>
           اعتذرت اليوم
         </Button>
