@@ -213,6 +213,33 @@ export function Dashboard({ user }: { user: User }) {
 
   useEffect(() => { if (roleReady) loadAll(); /* eslint-disable-next-line */ }, [roleReady, role]);
 
+  // Realtime: sync appointment status (attended/apologized/absent/...) across admin, supervisor, specialist
+  useEffect(() => {
+    if (!roleReady) return;
+    const channel = supabase
+      .channel("appointments-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments" },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const row = payload.new as Appointment;
+            setAppointments((prev) => (prev.some((a) => a.id === row.id) ? prev : [row, ...prev]));
+          } else if (payload.eventType === "UPDATE") {
+            const row = payload.new as Appointment;
+            setAppointments((prev) => prev.map((a) => (a.id === row.id ? { ...a, ...row } : a)));
+          } else if (payload.eventType === "DELETE") {
+            const oldRow = payload.old as { id: string };
+            setAppointments((prev) => prev.filter((a) => a.id !== oldRow.id));
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roleReady]);
+
   const addSession = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!caseName.trim()) return toast.error("أدخل اسم الطفل");
