@@ -165,6 +165,7 @@ export function CasesCard({
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState(45);
   const [cost, setCost] = useState<number | "">("");
+  const [costSelect, setCostSelect] = useState<string>("");
   const [percentage, setPercentage] = useState(50);
   const [sessionKind, setSessionKind] = useState<string>("regular");
   const [sessionSubtype, setSessionSubtype] = useState<string>(defaultSubtypeFor("regular"));
