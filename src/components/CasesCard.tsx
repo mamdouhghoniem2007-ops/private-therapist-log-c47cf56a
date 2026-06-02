@@ -192,7 +192,7 @@ export function CasesCard({
   const toggleDay = (d: number) =>
     setDays((ds) => ds.includes(d) ? ds.filter((x) => x !== d) : [...ds, d].sort());
   const resetForm = () => {
-    setName(""); setWhatsapp(""); setDays([]); setCost("");
+    setName(""); setWhatsapp(""); setDays([]); setCost(""); setCostSelect("");
     setSessionKind("regular"); setSessionSubtype(defaultSubtypeFor("regular"));
     setShowForm(false);
   };
