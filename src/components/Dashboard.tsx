@@ -698,8 +698,8 @@ export function Dashboard({ user }: { user: User }) {
                         onAction={() => useAppointment(a)}
                         onStart={() => startAppointment(a.id)}
                         onEnd={() => endAppointment(a.id)}
-                        onRevert={canManageSchedule && (a.started_at || a.ended_at) ? () => revertAppointment(a.id) : undefined}
-                        onCancel={a.status !== "cancelled" ? () => markAppointmentCancelled(a.id) : undefined}
+                        onRevert={(a.started_at || a.ended_at || a.status === "attended" || a.status === "apologized" || a.status === "absent" || a.status === "cancelled") ? () => revertAppointment(a.id) : undefined}
+                        onAttendance={(kind) => setAppointmentAttendance(a.id, kind)}
                       />
                     ))}
                   </div>
