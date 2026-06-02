@@ -234,10 +234,11 @@ export function Dashboard({ user }: { user: User }) {
       sDur = Number(caseRow.default_duration_minutes) || 45;
     }
 
+    const todayStr = today();
     const { error } = await supabase.from("sessions").insert({
       specialist_id: user.id,
       case_name: name,
-      session_date: sDate,
+      session_date: todayStr,
       session_time: nowTime,
       duration_minutes: sDur,
       cost: sCost,
@@ -249,7 +250,7 @@ export function Dashboard({ user }: { user: User }) {
     setSubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تم تسجيل الجلسة بنجاح ✅", {
-      description: `الحالة: ${name} · ${sDate}${caseRow ? "" : " · تنبيه: لا يوجد ملف حالة بهذا الاسم، السعر = 0"}`,
+      description: `الحالة: ${name} · ${todayStr}${caseRow ? "" : " · تنبيه: لا يوجد ملف حالة بهذا الاسم، السعر = 0"}`,
       duration: 5000,
     });
     setCaseName(""); setSNotes("");
