@@ -534,8 +534,29 @@ export function CasesCard({
                     </div>
                     <div className="space-y-1.5">
                       <Label>سعر الجلسة</Label>
-                      <Input type="number" min={0} step="0.01" value={editDraft.default_cost}
-                        onChange={(e) => setEditDraft({ ...editDraft, default_cost: e.target.value === "" ? 0 : +e.target.value })} />
+                      <Select
+                        value={editCostPresetValue(editDraft)}
+                        onValueChange={(v) => {
+                          if (v !== "custom") setEditDraft({ ...editDraft, default_cost: Number(v) });
+                          else setEditDraft({ ...editDraft, default_cost: 0 });
+                        }}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {COST_PRESETS.map((c) => (
+                            <SelectItem key={c} value={String(c)}>{c}</SelectItem>
+                          ))}
+                          <SelectItem value="custom">قيمة أخرى</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {editCostPresetValue(editDraft) === "custom" && (
+                        <Input
+                          type="number" min={0} step="0.01"
+                          value={editDraft.default_cost || ""}
+                          onChange={(e) => setEditDraft({ ...editDraft, default_cost: e.target.value === "" ? 0 : +e.target.value })}
+                          placeholder="اكتب السعر"
+                        />
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <Label>نسبة الأخصائي</Label>
