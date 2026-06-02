@@ -276,16 +276,85 @@ export function Dashboard({ user }: { user: User }) {
     loadAll();
   };
 
-  const markAppointmentCancelled = async (id: string) => {
-    const { error } = await supabase.from("appointments").update({ status: "cancelled" }).eq("id", id);
-    if (error) return toast.error(error.message);
-    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, status: "cancelled" } : x)));
+  type Attendance = "attended" | "apologized" | "absent";
+  const setAppointmentAttendance = async (id: string, kind: Attendance) => {
     const appt = appointments.find((x) => x.id === id);
-    toast.success("تم تسجيل اعتذار الحالة", {
-      description: appt ? `${appt.case_name} · ${appt.scheduled_date} ${appt.scheduled_time.slice(0,5)}` : undefined,
-      duration: 6000,
-    });
+    if (!appt) return;
+
+    if (kind === "attended") {
+      // علم الحضور = الجلسة تمت → سجلها في جدول الجلسات (مرة واحدة)
+      const now = new Date().toISOString();
+      setAppointments((a) => a.map((x) => (x.id === id ? { ...x, status: "attended", ended_at: x.ended_at ?? now } : x)));
+      const { error } = await supabase
+        .from("appointments")
+        .update({ status: "attended", ended_at: appt.ended_at ?? now })
+        .eq("id", id);
+      if (error) { toast.error(error.message); return; }
+
+      let sCost = appt.cost != null ? Number(appt.cost) : 0;
+      let sPct = Number(appt.specialist_percentage) || 50;
+      let sDur = Number(appt.duration_minutes) || 45;
+      if (!sCost && appt.case_id) {
+        const { data: caseRow } = await supabase
+          .from("cases")
+          .select("default_cost, default_specialist_percentage, default_duration_minutes")
+          .eq("id", appt.case_id)
+          .maybeSingle();
+        if (caseRow) {
+          sCost = Number(caseRow.default_cost) || 0;
+          if (!appt.specialist_percentage) sPct = Number(caseRow.default_specialist_percentage) || 50;
+          sDur = Number(caseRow.default_duration_minutes) || sDur;
+        }
+      }
+      const { data: existing } = await supabase
+        .from("sessions")
+        .select("id")
+        .eq("specialist_id", appt.specialist_id)
+        .eq("case_name", appt.case_name)
+        .eq("session_date", appt.scheduled_date)
+        .eq("session_time", appt.scheduled_time)
+        .maybeSingle();
+      if (!existing) {
+        const { error: sErr } = await supabase.from("sessions").insert({
+          specialist_id: appt.specialist_id,
+          case_name: appt.case_name,
+          session_date: appt.scheduled_date,
+          session_time: appt.scheduled_time,
+          duration_minutes: sDur,
+          cost: sCost,
+          specialist_percentage: sPct,
+          session_type: appt.session_type,
+          test_type: appt.test_type,
+          notes: appt.notes,
+        });
+        if (sErr) { toast.error(sErr.message); return; }
+      }
+      toast.success("تم تسجيل الحضور ✅");
+      loadAll();
+      return;
+    }
+
+    // معتذرة / غائبة → امسح أي تسجيل سابق ولا تحتسبها في الإحصائيات
+    setAppointments((a) => a.map((x) => (x.id === id ? { ...x, status: kind, started_at: null, ended_at: null } : x)));
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: kind, started_at: null, ended_at: null })
+      .eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    await supabase
+      .from("sessions")
+      .delete()
+      .eq("specialist_id", appt.specialist_id)
+      .eq("case_name", appt.case_name)
+      .eq("session_date", appt.scheduled_date)
+      .eq("session_time", appt.scheduled_time);
+    toast.success(kind === "apologized" ? "تم تسجيل اعتذار الحالة 🟠" : "تم تسجيل غياب الحالة 🔴");
+    loadAll();
   };
+
+  // متوافق مع الكود القديم
+  const markAppointmentCancelled = (id: string) => setAppointmentAttendance(id, "apologized");
+
 
   const removeAppointment = async (id: string) => {
     const { error } = await supabase.from("appointments").delete().eq("id", id);
