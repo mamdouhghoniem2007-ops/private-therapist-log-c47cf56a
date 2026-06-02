@@ -539,78 +539,31 @@ export function Dashboard({ user }: { user: User }) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={addSession} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-                  <div className="space-y-2 lg:col-span-2">
-                    <Label>اسم الحالة</Label>
+                <form onSubmit={addSession} className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>اسم الطفل</Label>
                     <Input required value={caseName} onChange={(e) => setCaseName(e.target.value)} placeholder="مثال: أحمد م." />
                   </div>
-                  <div className="space-y-2">
-                    <Label>نوع الجلسة</Label>
-                    <Select value={sType} onValueChange={setSType}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {SESSION_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {sType === TESTS_LABEL && (
-                    <div className="space-y-2 lg:col-span-2">
-                      <Label>نوع الاختبار</Label>
-                      <Select value={sTestType} onValueChange={setSTestType}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {TEST_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
+                  <div className="space-y-2 sm:col-span-2">
                     <Label>التاريخ</Label>
                     <Input type="date" required value={sDate} onChange={(e) => setSDate(e.target.value)} />
                   </div>
-                  <div className="space-y-2">
-                    <Label>الوقت</Label>
-                    <Input type="time" required value={sTime} onChange={(e) => setSTime(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>المدة</Label>
-                    <Select value={String(duration)} onValueChange={(v) => setDuration(+v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {DURATION_OPTIONS.map((d) => <SelectItem key={d} value={String(d)}>{d} دقيقة</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>التكلفة</Label>
-                    <Input type="number" min={0} step="0.01" required value={cost} onChange={(e) => setCost(e.target.value === "" ? "" : +e.target.value)} placeholder="0" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>نسبة الأخصائي</Label>
-                    <Select value={String(percentage)} onValueChange={(v) => setPercentage(+v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {PERCENTAGE_OPTIONS.map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2 sm:col-span-2 lg:col-span-6">
+                  <div className="space-y-2 sm:col-span-2">
                     <Label>ما تم خلال الجلسة</Label>
                     <Textarea
                       value={sNotes}
                       onChange={(e) => setSNotes(e.target.value)}
                       placeholder="اكتب باختصار ما تم مع الحالة خلال الجلسة (الأنشطة، الملاحظات، التقدم...)"
-                      rows={3}
+                      rows={4}
                     />
                   </div>
-                  <div className="sm:col-span-2 lg:col-span-6 flex items-end">
-                    <Button type="submit" disabled={submitting} className="w-full lg:w-auto">
+                  <div className="sm:col-span-2 flex items-end">
+                    <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                       {submitting ? "جارٍ الحفظ..." : "إضافة الجلسة"}
                     </Button>
                   </div>
-
                 </form>
+
               </CardContent>
             </Card>
           </>
