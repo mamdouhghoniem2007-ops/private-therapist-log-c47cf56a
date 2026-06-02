@@ -282,7 +282,7 @@ export function Dashboard({ user }: { user: User }) {
     setASubmitting(false);
     if (error) return toast.error(error.message);
     toast.success("تم إضافة الموعد للجدول");
-    setACase(""); setANotes(""); setACost(""); setACaseWhatsapp(""); setASessionKind("regular");
+    setACase(""); setANotes(""); setACost(""); setACostSelect(""); setACaseWhatsapp(""); setASessionKind("regular");
     loadAll();
   };
 
