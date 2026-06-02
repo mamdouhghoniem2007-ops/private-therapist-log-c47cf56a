@@ -552,6 +552,7 @@ export function Dashboard({ user }: { user: User }) {
                         onAction={() => useAppointment(a)}
                         onStart={() => startAppointment(a.id)}
                         onEnd={() => endAppointment(a.id)}
+                        onRevert={canManageSchedule && (a.started_at || a.ended_at) ? () => revertAppointment(a.id) : undefined}
                         onCancel={a.status !== "cancelled" ? () => markAppointmentCancelled(a.id) : undefined}
                       />
                     ))}
