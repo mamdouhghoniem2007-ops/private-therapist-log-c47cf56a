@@ -97,6 +97,15 @@ export function Dashboard({ user }: { user: User }) {
   const [allRoles, setAllRoles] = useState<Record<string, Role>>({});
   const [filterDate, setFilterDate] = useState(today());
   const [loading, setLoading] = useState(true);
+  const [caseNames, setCaseNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("cases").select("name").order("name");
+      const names = Array.from(new Set(((data as { name: string }[] | null) || []).map((c) => c.name).filter(Boolean)));
+      setCaseNames(names);
+    })();
+  }, [sessions, appointments]);
 
   // session form (specialist)
   const [caseName, setCaseName] = useState("");
@@ -473,6 +482,9 @@ export function Dashboard({ user }: { user: User }) {
 
   return (
     <div className="min-h-screen">
+      <datalist id="case-names-list">
+        {caseNames.map((n) => <option key={n} value={n} />)}
+      </datalist>
       <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-10">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -542,7 +554,7 @@ export function Dashboard({ user }: { user: User }) {
                 <form onSubmit={addSession} className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
                     <Label>اسم الطفل</Label>
-                    <Input required value={caseName} onChange={(e) => setCaseName(e.target.value)} placeholder="مثال: أحمد م." />
+                    <Input required list="case-names-list" value={caseName} onChange={(e) => setCaseName(e.target.value)} placeholder="اختر من القائمة أو اكتب اسمًا" />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label>التاريخ</Label>
@@ -591,7 +603,7 @@ export function Dashboard({ user }: { user: User }) {
                 </div>
                 <div className="space-y-2 lg:col-span-2">
                   <Label>اسم الحالة</Label>
-                  <Input required value={aCase} onChange={(e) => setACase(e.target.value)} placeholder="مثال: أحمد م." />
+                  <Input required list="case-names-list" value={aCase} onChange={(e) => setACase(e.target.value)} placeholder="اختر من القائمة أو اكتب اسمًا" />
                 </div>
                 <div className="space-y-2">
                   <Label>نوع الجلسة</Label>
