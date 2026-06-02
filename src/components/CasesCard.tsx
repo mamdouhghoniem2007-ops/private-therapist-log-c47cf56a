@@ -100,6 +100,10 @@ export function CasesCard({
     setEditingId(c.id);
     setEditDraft({ ...c });
   };
+  const editCostPresetValue = (draft: CaseRow | null) => {
+    if (!draft) return "";
+    return COST_PRESETS.includes(Number(draft.default_cost)) ? String(draft.default_cost) : "custom";
+  };
   const cancelEdit = () => { setEditingId(null); setEditDraft(null); };
   const toggleEditDay = (d: number) => {
     if (!editDraft) return;
