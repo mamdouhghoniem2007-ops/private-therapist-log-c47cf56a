@@ -476,12 +476,7 @@ export function Dashboard({ user }: { user: User }) {
     setDuration(a.duration_minutes);
     if (a.session_type) setSType(a.session_type);
     if (a.test_type) setSTestType(a.test_type);
-    if (a.cost != null) {
-      const c = Number(a.cost);
-      setCost(c);
-      setACost(c);
-      setACostSelect(COST_PRESETS.includes(c) ? String(c) : "custom");
-    }
+    if (a.cost != null) setCost(Number(a.cost));
     if (a.specialist_percentage != null) setPercentage(Number(a.specialist_percentage));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
