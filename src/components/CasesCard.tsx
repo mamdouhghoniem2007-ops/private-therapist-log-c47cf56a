@@ -161,6 +161,34 @@ export function CasesCard({
     }
   };
 
+  const markCaseAbsentToday = async (c: CaseRow) => {
+    const todayStr = today();
+    const { data: existing, error: qErr } = await supabase
+      .from("appointments")
+      .select("id, status")
+      .eq("case_id", c.id)
+      .eq("scheduled_date", todayStr)
+      .order("scheduled_time", { ascending: true })
+      .limit(1);
+    if (qErr) { toast.error(qErr.message); return; }
+    const row = existing?.[0];
+    if (!row) {
+      toast.error("لا يوجد موعد لهذه الحالة اليوم");
+      return;
+    }
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "absent", started_at: null, ended_at: null })
+      .eq("id", row.id);
+    if (error) { toast.error(error.message); return; }
+    setAppts((a) => {
+      const list = a[c.id];
+      if (!list) return a;
+      return { ...a, [c.id]: list.map((x) => x.id === row.id ? { ...x, status: "absent" } : x) };
+    });
+    toast.success("تم تسجيل غياب الحالة اليوم 🔴");
+  };
+
   // form
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
