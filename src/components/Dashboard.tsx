@@ -600,7 +600,7 @@ export function Dashboard({ user }: { user: User }) {
                 </div>
                 <div className="space-y-2 lg:col-span-2">
                   <Label>اسم الحالة</Label>
-                  <Input required value={aCase} onChange={(e) => setACase(e.target.value)} placeholder="مثال: أحمد م." />
+                  <Input required list="case-names-list" value={aCase} onChange={(e) => setACase(e.target.value)} placeholder="اختر من القائمة أو اكتب اسمًا" />
                 </div>
                 <div className="space-y-2">
                   <Label>نوع الجلسة</Label>
