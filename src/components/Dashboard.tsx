@@ -209,23 +209,40 @@ export function Dashboard({ user }: { user: User }) {
     if (!caseName.trim()) return toast.error("أدخل اسم الطفل");
     setSubmitting(true);
     const nowTime = new Date().toTimeString().slice(0, 5);
+    const name = caseName.trim();
+
+    // اجلب القيم الافتراضية من ملف الحالة (السعر/النسبة/المدة) حتى يتسجّل نصيب الأخصائي والمركز
+    let sCost = 0;
+    let sPct = 50;
+    let sDur = 45;
+    const { data: caseRow } = await supabase
+      .from("cases")
+      .select("default_cost, default_specialist_percentage, default_duration_minutes")
+      .eq("specialist_id", user.id)
+      .ilike("name", name)
+      .maybeSingle();
+    if (caseRow) {
+      sCost = Number(caseRow.default_cost) || 0;
+      sPct = Number(caseRow.default_specialist_percentage) || 50;
+      sDur = Number(caseRow.default_duration_minutes) || 45;
+    }
+
     const { error } = await supabase.from("sessions").insert({
       specialist_id: user.id,
-      case_name: caseName.trim(),
+      case_name: name,
       session_date: sDate,
       session_time: nowTime,
-      duration_minutes: 45,
-      cost: 0,
-      specialist_percentage: 50,
+      duration_minutes: sDur,
+      cost: sCost,
+      specialist_percentage: sPct,
       session_type: null,
       test_type: null,
       notes: sNotes.trim() || null,
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
-    const savedName = caseName.trim();
     toast.success("تم تسجيل الجلسة بنجاح ✅", {
-      description: `الحالة: ${savedName} · ${sDate}`,
+      description: `الحالة: ${name} · ${sDate}${caseRow ? "" : " · تنبيه: لا يوجد ملف حالة بهذا الاسم، السعر = 0"}`,
       duration: 5000,
     });
     setCaseName(""); setSNotes("");
