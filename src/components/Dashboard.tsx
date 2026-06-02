@@ -360,11 +360,22 @@ export function Dashboard({ user }: { user: User }) {
   };
 
   const revertAppointment = async (id: string) => {
-    if (!confirm("هل تريد إرجاع الجلسة؟ سيتم مسح وقت البدء والانتهاء.")) return;
+    if (!confirm("هل تريد إرجاع الجلسة؟ سيتم مسح وقت البدء والانتهاء وحذف تسجيلها من السجل.")) return;
+    const appt = appointments.find((x) => x.id === id);
     setAppointments((a) => a.map((x) => (x.id === id ? { ...x, started_at: null, ended_at: null, status: "scheduled" } : x)));
     const { error } = await supabase.from("appointments").update({ started_at: null, ended_at: null, status: "scheduled" }).eq("id", id);
-    if (error) toast.error(error.message);
-    else toast.success("تم إرجاع الجلسة");
+    if (error) { toast.error(error.message); return; }
+    if (appt) {
+      await supabase
+        .from("sessions")
+        .delete()
+        .eq("specialist_id", appt.specialist_id)
+        .eq("case_name", appt.case_name)
+        .eq("session_date", appt.scheduled_date)
+        .eq("session_time", appt.scheduled_time);
+    }
+    toast.success("تم إرجاع الجلسة");
+    loadAll();
   };
 
   const updateAppointmentCost = async (id: string, value: number) => {
