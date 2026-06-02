@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
-import { ShieldCheck, Stethoscope, ArrowRight } from "lucide-react";
+import { ShieldCheck, Stethoscope, ArrowRight, Eye, EyeOff } from "lucide-react";
 
 type Mode = "login" | "signup" | "forgot";
 type Portal = "admin" | "specialist";
@@ -27,6 +27,7 @@ export function AuthForm() {
   const [fullName, setFullName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const onHash = () => setPortal(getPortalFromHash());
@@ -174,7 +175,26 @@ export function AuthForm() {
                     </button>
                   )}
                 </div>
-                <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    dir="ltr"
+                    className="pl-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 left-0 flex w-12 items-center justify-center text-muted-foreground transition hover:text-primary"
+                    aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             )}
             <Button type="submit" disabled={loading} className="w-full">
