@@ -551,7 +551,7 @@ export function Dashboard({ user }: { user: User }) {
                 <form onSubmit={addSession} className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
                     <Label>اسم الطفل</Label>
-                    <Input required value={caseName} onChange={(e) => setCaseName(e.target.value)} placeholder="مثال: أحمد م." />
+                    <Input required list="case-names-list" value={caseName} onChange={(e) => setCaseName(e.target.value)} placeholder="اختر من القائمة أو اكتب اسمًا" />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label>التاريخ</Label>
