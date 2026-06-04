@@ -661,6 +661,24 @@ export function CasesCard({
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label>طريقة الدفع</Label>
+                      <Select value={editDraft.payment_type || "per_session"} onValueChange={(v) => setEditDraft({ ...editDraft, payment_type: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {PAYMENT_TYPE_OPTIONS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>نسبة الخصم %</Label>
+                      <Input
+                        type="number" min={0} max={100} step="0.01"
+                        value={editDraft.discount_percentage ?? 0}
+                        onChange={(e) => setEditDraft({ ...editDraft, discount_percentage: e.target.value === "" ? 0 : +e.target.value })}
+                      />
+                    </div>
+
 
                     <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
                       <Label>ملاحظات</Label>
