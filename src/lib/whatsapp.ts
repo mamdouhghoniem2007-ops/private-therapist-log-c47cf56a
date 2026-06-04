@@ -1,3 +1,5 @@
+import { fmtTime12 } from "@/lib/utils";
+
 export function waLink(phone: string | null | undefined, message: string): string | null {
   if (!phone) return null;
   const digits = String(phone).replace(/\D/g, "");
@@ -17,7 +19,7 @@ export function formatAppointmentMessage(opts: {
   const dateTxt = isNaN(d.getTime())
     ? opts.date
     : d.toLocaleDateString("ar-EG", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const timeTxt = opts.time.slice(0, 5);
+  const timeTxt = fmtTime12(opts.time);
   const lines = [
     `📋 *تأكيد موعد جلسة — ${opts.caseName}*`,
     ``,

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save } from "lucide-react";
 import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
+import { fmtTime12 } from "@/lib/utils";
 
 type CaseAppt = {
   id: string;
@@ -494,7 +495,7 @@ export function CasesCard({
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {c.recurring_days.map((d) => DAY_LABELS[d]).join("، ") || "—"}
-                      <span dir="ltr"> · {c.recurring_time.slice(0, 5)}</span>
+                      <span dir="ltr"> · {fmtTime12(c.recurring_time)}</span>
                       {" · "}{c.default_duration_minutes} د
                       {" · "}{Number(c.default_cost).toFixed(2)} ({c.default_specialist_percentage}%)
                       {" · "}{PAYMENT_TYPE_LABEL[c.payment_type] || "بالجلسة"}
@@ -713,7 +714,7 @@ export function CasesCard({
                           <li key={a.id} className="text-xs flex items-center justify-between gap-2 px-2 py-1 rounded bg-background">
                             <span>
                               {new Date(a.scheduled_date).toLocaleDateString("ar-EG", { weekday: "short", day: "2-digit", month: "2-digit" })}
-                              <span dir="ltr"> · {a.scheduled_time.slice(0, 5)}</span>
+                              <span dir="ltr"> · {fmtTime12(a.scheduled_time)}</span>
                             </span>
                             <span className="flex items-center gap-1.5">
                               <span className="text-muted-foreground">{KIND_LABEL[a.session_kind] || a.session_kind}</span>

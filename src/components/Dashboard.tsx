@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog, Download, MessageCircle, Printer } from "lucide-react";
 import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
+import { fmtTime12 } from "@/lib/utils";
 import logo from "@/assets/logo.png";
 import { AttendanceCard } from "@/components/AttendanceCard";
 import { CasesCard } from "@/components/CasesCard";
@@ -643,7 +644,7 @@ export function Dashboard({ user }: { user: User }) {
     const a = apptMap[`${s.specialist_id}|${s.case_name}|${s.session_date}`];
     return [
       s.session_date,
-      s.session_time?.slice(0, 5) || "",
+      fmtTime12(s.session_time),
       fmtT(a?.started_at),
       fmtT(a?.ended_at),
       profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—"),
@@ -737,7 +738,7 @@ export function Dashboard({ user }: { user: User }) {
       const a = apptMap[`${s.specialist_id}|${s.case_name}|${s.session_date}`];
       return `<tr>
         <td>${s.session_date}</td>
-        <td>${(s.session_time || "").slice(0, 5)}</td>
+        <td>${fmtTime12(s.session_time)}</td>
         <td>${fmtT(a?.started_at)}</td>
         <td>${fmtT(a?.ended_at)}</td>
         <td>${profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—")}</td>
@@ -1260,7 +1261,7 @@ function AppointmentRow({
           {subtitle && <span className="text-xs text-muted-foreground">— {subtitle}</span>}
         </div>
         <p className="text-xs text-muted-foreground mt-1" dir="ltr">
-          {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
+          {fmtTime12(a.scheduled_time)} · {a.duration_minutes} د
           {startedTxt && <span dir="rtl"> · بدأت: {startedTxt}</span>}
           {endedTxt && <span dir="rtl"> · انتهت: {endedTxt}</span>}
           {!hideFinancial && a.cost != null && !onCostChange && <span dir="rtl"> · تكلفة: {Number(a.cost).toFixed(2)}{Number(a.discount_percentage) > 0 && ` · خصم ${Number(a.discount_percentage)}% (الصافي ${netA?.toFixed(2)})`}</span>}
@@ -1414,7 +1415,7 @@ function SessionsTable({
                 </td>
 
                 <td className="py-3 px-2 text-muted-foreground">{s.session_type || "—"}{s.test_type && <span className="block text-xs text-primary">{s.test_type}</span>}</td>
-                <td className="py-3 px-2 text-muted-foreground" dir="ltr">{s.session_time.slice(0, 5)}</td>
+                <td className="py-3 px-2 text-muted-foreground" dir="ltr">{fmtTime12(s.session_time)}</td>
                 <td className="py-3 px-2 text-muted-foreground">{s.duration_minutes} د</td>
                 <td className="py-3 px-2">{gross.toFixed(2)}</td>
                 <td className="py-3 px-2 text-amber-700">{disc > 0 ? `${disc}%` : "—"}</td>
