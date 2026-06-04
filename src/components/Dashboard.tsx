@@ -701,13 +701,13 @@ export function Dashboard({ user }: { user: User }) {
     for (const s of monthRows) {
       const name = profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—");
       if (!sum[s.specialist_id]) sum[s.specialist_id] = { name, count: 0, total: 0, share: 0 };
-      const c = Number(s.cost);
+      const c = netCost(s.cost, s.discount_percentage);
       sum[s.specialist_id].count += 1;
       sum[s.specialist_id].total += c;
       sum[s.specialist_id].share += (c * Number(s.specialist_percentage)) / 100;
     }
     const sumLines = [
-      ["الأخصائي", "عدد الجلسات", "الإجمالي", "نصيب الأخصائي", "نصيب المركز"].map(esc).join(","),
+      ["الأخصائي", "عدد الجلسات", "الإجمالي بعد الخصم", "نصيب الأخصائي", "نصيب المركز"].map(esc).join(","),
       ...Object.values(sum).map((g) => [g.name, g.count, g.total.toFixed(2), g.share.toFixed(2), (g.total - g.share).toFixed(2)].map(esc).join(",")),
     ];
 
@@ -725,13 +725,15 @@ export function Dashboard({ user }: { user: User }) {
   };
 
   const buildPrintHtml = (title: string, rows: Session[], showSummary: boolean) => {
-    const totalCost = rows.reduce((s, x) => s + Number(x.cost), 0);
-    const specShare = rows.reduce((s, x) => s + (Number(x.cost) * Number(x.specialist_percentage)) / 100, 0);
+    const totalCost = rows.reduce((s, x) => s + netCost(x.cost, x.discount_percentage), 0);
+    const specShare = rows.reduce((s, x) => s + (netCost(x.cost, x.discount_percentage) * Number(x.specialist_percentage)) / 100, 0);
     const centerShare = totalCost - specShare;
 
     const bodyRows = rows.map((s) => {
-      const cost = Number(s.cost);
-      const share = (cost * Number(s.specialist_percentage)) / 100;
+      const gross = Number(s.cost);
+      const disc = Number(s.discount_percentage) || 0;
+      const net = netCost(gross, disc);
+      const share = (net * Number(s.specialist_percentage)) / 100;
       const a = apptMap[`${s.specialist_id}|${s.case_name}|${s.session_date}`];
       return `<tr>
         <td>${s.session_date}</td>
@@ -743,10 +745,13 @@ export function Dashboard({ user }: { user: User }) {
         <td>${s.session_type || ""}</td>
         <td>${s.test_type || ""}</td>
         <td>${s.duration_minutes}</td>
-        <td>${cost.toFixed(2)}</td>
+        <td>${gross.toFixed(2)}</td>
+        <td>${disc}%</td>
+        <td>${net.toFixed(2)}</td>
         <td>${s.specialist_percentage}%</td>
         <td>${share.toFixed(2)}</td>
-        <td>${(cost - share).toFixed(2)}</td>
+        <td>${(net - share).toFixed(2)}</td>
+        <td>${s.payment_type === "monthly" ? "بالشهر" : "بالجلسة"}</td>
         <td>${(s.notes || "").replace(/</g, "&lt;")}</td>
       </tr>`;
     }).join("");
