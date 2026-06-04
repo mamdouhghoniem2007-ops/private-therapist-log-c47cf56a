@@ -1440,7 +1440,7 @@ function SessionsTable({
         {totals && (
           <tfoot className="border-t-2 font-semibold">
             <tr>
-              <td className="py-3 pr-2" colSpan={4}>المجموع</td>
+              <td className="py-3 pr-2" colSpan={6}>المجموع (بعد الخصم)</td>
               <td className="py-3 px-2">{totals.totalCost.toFixed(2)}</td>
               <td className="py-3 px-2"></td>
               <td className="py-3 px-2 text-primary">{totals.specialistShare.toFixed(2)}</td>
