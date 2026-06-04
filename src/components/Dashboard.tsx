@@ -39,7 +39,8 @@ type Session = {
   session_type: string | null;
   test_type: string | null;
   notes: string | null;
-
+  discount_percentage: number;
+  payment_type: string;
 };
 
 type Appointment = {
@@ -60,6 +61,8 @@ type Appointment = {
   ended_at: string | null;
   session_kind: SessionKind;
   case_id: string | null;
+  discount_percentage: number;
+  payment_type: string;
 };
 
 type Profile = { id: string; full_name: string };
@@ -86,6 +89,12 @@ const TEST_TYPES = [
 ];
 const ROLE_LABEL: Record<Role, string> = { admin: "مدير", supervisor: "مشرف", specialist: "أخصائي" };
 
+
+const netCost = (cost: number | null | undefined, discountPct: number | null | undefined) => {
+  const c = Number(cost) || 0;
+  const d = Math.max(0, Math.min(100, Number(discountPct) || 0));
+  return c * (1 - d / 100);
+};
 
 export function Dashboard({ user }: { user: User }) {
   const [profileName, setProfileName] = useState<string>("");
@@ -247,13 +256,15 @@ export function Dashboard({ user }: { user: User }) {
     const nowTime = new Date().toTimeString().slice(0, 5);
     const name = caseName.trim();
 
-    // اجلب القيم الافتراضية من ملف الحالة (السعر/النسبة/المدة) حتى يتسجّل نصيب الأخصائي والمركز
+    // اجلب القيم الافتراضية من ملف الحالة (السعر/النسبة/المدة/الخصم/طريقة الدفع)
     let sCost = 0;
     let sPct = 50;
     let sDur = 45;
+    let sDisc = 0;
+    let sPay = "per_session";
     const { data: caseRow } = await supabase
       .from("cases")
-      .select("default_cost, default_specialist_percentage, default_duration_minutes")
+      .select("default_cost, default_specialist_percentage, default_duration_minutes, discount_percentage, payment_type")
       .eq("specialist_id", user.id)
       .ilike("name", name)
       .maybeSingle();
@@ -261,6 +272,8 @@ export function Dashboard({ user }: { user: User }) {
       sCost = Number(caseRow.default_cost) || 0;
       sPct = Number(caseRow.default_specialist_percentage) || 50;
       sDur = Number(caseRow.default_duration_minutes) || 45;
+      sDisc = Number((caseRow as any).discount_percentage) || 0;
+      sPay = (caseRow as any).payment_type || "per_session";
     }
 
     const todayStr = today();
@@ -272,6 +285,8 @@ export function Dashboard({ user }: { user: User }) {
       duration_minutes: sDur,
       cost: sCost,
       specialist_percentage: sPct,
+      discount_percentage: sDisc,
+      payment_type: sPay,
       session_type: null,
       test_type: null,
       notes: sNotes.trim() || null,
@@ -331,16 +346,20 @@ export function Dashboard({ user }: { user: User }) {
       let sCost = appt.cost != null ? Number(appt.cost) : 0;
       let sPct = Number(appt.specialist_percentage) || 50;
       let sDur = Number(appt.duration_minutes) || 45;
-      if (!sCost && appt.case_id) {
+      let sDisc = Number(appt.discount_percentage) || 0;
+      let sPay = appt.payment_type || "per_session";
+      if (appt.case_id && (!sCost || !sDisc)) {
         const { data: caseRow } = await supabase
           .from("cases")
-          .select("default_cost, default_specialist_percentage, default_duration_minutes")
+          .select("default_cost, default_specialist_percentage, default_duration_minutes, discount_percentage, payment_type")
           .eq("id", appt.case_id)
           .maybeSingle();
         if (caseRow) {
-          sCost = Number(caseRow.default_cost) || 0;
+          if (!sCost) sCost = Number(caseRow.default_cost) || 0;
           if (!appt.specialist_percentage) sPct = Number(caseRow.default_specialist_percentage) || 50;
           sDur = Number(caseRow.default_duration_minutes) || sDur;
+          if (!appt.discount_percentage) sDisc = Number((caseRow as any).discount_percentage) || 0;
+          if (!appt.payment_type) sPay = (caseRow as any).payment_type || "per_session";
         }
       }
       const { data: existing } = await supabase
@@ -360,6 +379,8 @@ export function Dashboard({ user }: { user: User }) {
           duration_minutes: sDur,
           cost: sCost,
           specialist_percentage: sPct,
+          discount_percentage: sDisc,
+          payment_type: sPay,
           session_type: appt.session_type,
           test_type: appt.test_type,
           notes: appt.notes,
@@ -420,17 +441,21 @@ export function Dashboard({ user }: { user: User }) {
       let sCost = appt.cost != null ? Number(appt.cost) : 0;
       let sPct = Number(appt.specialist_percentage) || 50;
       let sDur = Number(appt.duration_minutes) || 45;
+      let sDisc = Number(appt.discount_percentage) || 0;
+      let sPay = appt.payment_type || "per_session";
 
-      if (!sCost && appt.case_id) {
+      if (appt.case_id && (!sCost || !sDisc)) {
         const { data: caseRow } = await supabase
           .from("cases")
-          .select("default_cost, default_specialist_percentage, default_duration_minutes")
+          .select("default_cost, default_specialist_percentage, default_duration_minutes, discount_percentage, payment_type")
           .eq("id", appt.case_id)
           .maybeSingle();
         if (caseRow) {
-          sCost = Number(caseRow.default_cost) || 0;
+          if (!sCost) sCost = Number(caseRow.default_cost) || 0;
           if (!appt.specialist_percentage) sPct = Number(caseRow.default_specialist_percentage) || 50;
           sDur = Number(caseRow.default_duration_minutes) || sDur;
+          if (!appt.discount_percentage) sDisc = Number((caseRow as any).discount_percentage) || 0;
+          if (!appt.payment_type) sPay = (caseRow as any).payment_type || "per_session";
         }
       }
 
@@ -453,6 +478,8 @@ export function Dashboard({ user }: { user: User }) {
           duration_minutes: sDur,
           cost: sCost,
           specialist_percentage: sPct,
+          discount_percentage: sDisc,
+          payment_type: sPay,
           session_type: appt.session_type,
           test_type: appt.test_type,
           notes: appt.notes,
@@ -561,20 +588,21 @@ export function Dashboard({ user }: { user: User }) {
       const k = s.specialist_id;
       if (!groups[k]) groups[k] = { name: profilesMap[k] || "—", rows: [], total: 0, share: 0, center: 0 };
       groups[k].rows.push(s);
-      const cost = Number(s.cost);
-      const share = (cost * Number(s.specialist_percentage)) / 100;
-      groups[k].total += cost;
+      const net = netCost(s.cost, s.discount_percentage);
+      const share = (net * Number(s.specialist_percentage)) / 100;
+      groups[k].total += net;
       groups[k].share += share;
-      groups[k].center += cost - share;
+      groups[k].center += net - share;
     }
     return Object.entries(groups).map(([id, g]) => ({ id, ...g }));
   }, [isAdmin, dayRows, profilesMap]);
 
   const totals = useMemo(() => {
-    const totalCost = dayRows.reduce((sum, s) => sum + Number(s.cost), 0);
-    const specialistShare = dayRows.reduce((sum, s) => sum + (Number(s.cost) * Number(s.specialist_percentage)) / 100, 0);
+    const totalCost = dayRows.reduce((sum, s) => sum + netCost(s.cost, s.discount_percentage), 0);
+    const specialistShare = dayRows.reduce((sum, s) => sum + (netCost(s.cost, s.discount_percentage) * Number(s.specialist_percentage)) / 100, 0);
     return { totalCost, specialistShare, centerShare: totalCost - specialistShare, count: dayRows.length };
   }, [dayRows]);
+
 
   const allUsersForRoles = useMemo(() => {
     return Object.entries(profilesMap)
@@ -608,8 +636,10 @@ export function Dashboard({ user }: { user: User }) {
   }, [appointments]);
 
   const sessionRowCsv = (s: Session) => {
-    const cost = Number(s.cost);
-    const share = (cost * Number(s.specialist_percentage)) / 100;
+    const gross = Number(s.cost);
+    const disc = Number(s.discount_percentage) || 0;
+    const net = netCost(gross, disc);
+    const share = (net * Number(s.specialist_percentage)) / 100;
     const a = apptMap[`${s.specialist_id}|${s.case_name}|${s.session_date}`];
     return [
       s.session_date,
@@ -621,18 +651,31 @@ export function Dashboard({ user }: { user: User }) {
       s.session_type || "",
       s.test_type || "",
       s.duration_minutes,
-      cost.toFixed(2),
+      gross.toFixed(2),
+      disc + "%",
+      net.toFixed(2),
       s.specialist_percentage,
       share.toFixed(2),
-      (cost - share).toFixed(2),
+      (net - share).toFixed(2),
+      (s.payment_type === "monthly" ? "بالشهر" : "بالجلسة"),
       (s.notes || "").replace(/\n/g, " "),
     ].map(esc).join(",");
   };
-  const sessionHeaders = ["التاريخ", "الوقت المجدول", "بداية الجلسة", "نهاية الجلسة", "الأخصائي", "اسم الحالة", "نوع الجلسة", "نوع الاختبار", "المدة (دقيقة)", "التكلفة", "نسبة الأخصائي %", "نصيب الأخصائي", "نصيب المركز", "ملاحظات"];
+  const sessionHeaders = ["التاريخ", "الوقت المجدول", "بداية الجلسة", "نهاية الجلسة", "الأخصائي", "اسم الحالة", "نوع الجلسة", "نوع الاختبار", "المدة (دقيقة)", "السعر الأصلي", "الخصم", "السعر بعد الخصم", "نسبة الأخصائي %", "نصيب الأخصائي", "نصيب المركز", "طريقة الدفع", "ملاحظات"];
+
+  const padTotalRow = (label: string, total: number, share: number, center: number) => {
+    // Match column count of sessionHeaders. Place totals in the cost/share columns.
+    const row: (string | number)[] = new Array(sessionHeaders.length).fill("");
+    row[8] = label; // "الإجمالي" under duration column
+    row[11] = total.toFixed(2); // السعر بعد الخصم
+    row[13] = share.toFixed(2); // نصيب الأخصائي
+    row[14] = center.toFixed(2); // نصيب المركز
+    return row.map(esc).join(",");
+  };
 
   const downloadDailySheet = () => {
     const rows = dayRows.map(sessionRowCsv);
-    const totalRow = ["", "", "", "", "", "", "", "", "الإجمالي", totals.totalCost.toFixed(2), "", totals.specialistShare.toFixed(2), totals.centerShare.toFixed(2), ""].map(esc).join(",");
+    const totalRow = padTotalRow("الإجمالي", totals.totalCost, totals.specialistShare, totals.centerShare);
     triggerDownload(`جلسات-${filterDate}.csv`, [sessionHeaders.map(esc).join(","), ...rows, totalRow].join("\n"));
     toast.success("تم تنزيل الشيت اليومي");
   };
@@ -648,22 +691,23 @@ export function Dashboard({ user }: { user: User }) {
     if (error) return toast.error(error.message);
     const monthRows = ((data as Session[]) || []);
     const rows = monthRows.map(sessionRowCsv);
-    const totalCost = monthRows.reduce((sum, s) => sum + Number(s.cost), 0);
-    const specShare = monthRows.reduce((sum, s) => sum + (Number(s.cost) * Number(s.specialist_percentage)) / 100, 0);
-    const totalRow = ["", "", "", "", "", "", "", "", "الإجمالي", totalCost.toFixed(2), "", specShare.toFixed(2), (totalCost - specShare).toFixed(2), ""].map(esc).join(",");
+    const totalCost = monthRows.reduce((sum, s) => sum + netCost(s.cost, s.discount_percentage), 0);
+    const specShare = monthRows.reduce((sum, s) => sum + (netCost(s.cost, s.discount_percentage) * Number(s.specialist_percentage)) / 100, 0);
+    const totalRow = padTotalRow("الإجمالي", totalCost, specShare, totalCost - specShare);
+
 
     // Summary per specialist
     const sum: Record<string, { name: string; count: number; total: number; share: number }> = {};
     for (const s of monthRows) {
       const name = profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—");
       if (!sum[s.specialist_id]) sum[s.specialist_id] = { name, count: 0, total: 0, share: 0 };
-      const c = Number(s.cost);
+      const c = netCost(s.cost, s.discount_percentage);
       sum[s.specialist_id].count += 1;
       sum[s.specialist_id].total += c;
       sum[s.specialist_id].share += (c * Number(s.specialist_percentage)) / 100;
     }
     const sumLines = [
-      ["الأخصائي", "عدد الجلسات", "الإجمالي", "نصيب الأخصائي", "نصيب المركز"].map(esc).join(","),
+      ["الأخصائي", "عدد الجلسات", "الإجمالي بعد الخصم", "نصيب الأخصائي", "نصيب المركز"].map(esc).join(","),
       ...Object.values(sum).map((g) => [g.name, g.count, g.total.toFixed(2), g.share.toFixed(2), (g.total - g.share).toFixed(2)].map(esc).join(",")),
     ];
 
@@ -681,13 +725,15 @@ export function Dashboard({ user }: { user: User }) {
   };
 
   const buildPrintHtml = (title: string, rows: Session[], showSummary: boolean) => {
-    const totalCost = rows.reduce((s, x) => s + Number(x.cost), 0);
-    const specShare = rows.reduce((s, x) => s + (Number(x.cost) * Number(x.specialist_percentage)) / 100, 0);
+    const totalCost = rows.reduce((s, x) => s + netCost(x.cost, x.discount_percentage), 0);
+    const specShare = rows.reduce((s, x) => s + (netCost(x.cost, x.discount_percentage) * Number(x.specialist_percentage)) / 100, 0);
     const centerShare = totalCost - specShare;
 
     const bodyRows = rows.map((s) => {
-      const cost = Number(s.cost);
-      const share = (cost * Number(s.specialist_percentage)) / 100;
+      const gross = Number(s.cost);
+      const disc = Number(s.discount_percentage) || 0;
+      const net = netCost(gross, disc);
+      const share = (net * Number(s.specialist_percentage)) / 100;
       const a = apptMap[`${s.specialist_id}|${s.case_name}|${s.session_date}`];
       return `<tr>
         <td>${s.session_date}</td>
@@ -699,10 +745,13 @@ export function Dashboard({ user }: { user: User }) {
         <td>${s.session_type || ""}</td>
         <td>${s.test_type || ""}</td>
         <td>${s.duration_minutes}</td>
-        <td>${cost.toFixed(2)}</td>
+        <td>${gross.toFixed(2)}</td>
+        <td>${disc}%</td>
+        <td>${net.toFixed(2)}</td>
         <td>${s.specialist_percentage}%</td>
         <td>${share.toFixed(2)}</td>
-        <td>${(cost - share).toFixed(2)}</td>
+        <td>${(net - share).toFixed(2)}</td>
+        <td>${s.payment_type === "monthly" ? "بالشهر" : "بالجلسة"}</td>
         <td>${(s.notes || "").replace(/</g, "&lt;")}</td>
       </tr>`;
     }).join("");
@@ -713,13 +762,13 @@ export function Dashboard({ user }: { user: User }) {
       for (const s of rows) {
         const name = profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—");
         if (!sum[s.specialist_id]) sum[s.specialist_id] = { name, count: 0, total: 0, share: 0 };
-        const c = Number(s.cost);
+        const c = netCost(s.cost, s.discount_percentage);
         sum[s.specialist_id].count += 1;
         sum[s.specialist_id].total += c;
         sum[s.specialist_id].share += (c * Number(s.specialist_percentage)) / 100;
       }
       summaryHtml = `<h3>ملخص حسب الأخصائي</h3>
-      <table><thead><tr><th>الأخصائي</th><th>عدد الجلسات</th><th>الإجمالي</th><th>نصيب الأخصائي</th><th>نصيب المركز</th></tr></thead>
+      <table><thead><tr><th>الأخصائي</th><th>عدد الجلسات</th><th>الإجمالي بعد الخصم</th><th>نصيب الأخصائي</th><th>نصيب المركز</th></tr></thead>
       <tbody>${Object.values(sum).map((g) => `<tr><td>${g.name}</td><td>${g.count}</td><td>${g.total.toFixed(2)}</td><td>${g.share.toFixed(2)}</td><td>${(g.total - g.share).toFixed(2)}</td></tr>`).join("")}</tbody></table>`;
     }
 
@@ -1175,7 +1224,8 @@ function AppointmentRow({
 }) {
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
-  const share = a.cost != null ? (Number(a.cost) * Number(a.specialist_percentage)) / 100 : null;
+  const netA = a.cost != null ? netCost(a.cost, a.discount_percentage) : null;
+  const share = netA != null ? (netA * Number(a.specialist_percentage)) / 100 : null;
   const isAttended = a.status === "attended";
   const isApologized = a.status === "apologized" || a.status === "cancelled";
   const isAbsent = a.status === "absent";
@@ -1213,7 +1263,7 @@ function AppointmentRow({
           {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
           {startedTxt && <span dir="rtl"> · بدأت: {startedTxt}</span>}
           {endedTxt && <span dir="rtl"> · انتهت: {endedTxt}</span>}
-          {!hideFinancial && a.cost != null && !onCostChange && <span dir="rtl"> · تكلفة: {Number(a.cost).toFixed(2)}</span>}
+          {!hideFinancial && a.cost != null && !onCostChange && <span dir="rtl"> · تكلفة: {Number(a.cost).toFixed(2)}{Number(a.discount_percentage) > 0 && ` · خصم ${Number(a.discount_percentage)}% (الصافي ${netA?.toFixed(2)})`}</span>}
           {!hideFinancial && !onPercentageChange && <span dir="rtl"> · نسبة: {a.specialist_percentage}%</span>}
           {!hideFinancial && share != null && <span dir="rtl"> · نصيب الأخصائي: {share.toFixed(2)}</span>}
           {a.notes && <span dir="rtl"> · {a.notes}</span>}
@@ -1342,7 +1392,9 @@ function SessionsTable({
             <th className="py-3 px-2 font-medium">النوع</th>
             <th className="py-3 px-2 font-medium">الوقت</th>
             <th className="py-3 px-2 font-medium">المدة</th>
-            <th className="py-3 px-2 font-medium">التكلفة</th>
+            <th className="py-3 px-2 font-medium">السعر</th>
+            <th className="py-3 px-2 font-medium">الخصم</th>
+            <th className="py-3 px-2 font-medium">بعد الخصم</th>
             <th className="py-3 px-2 font-medium">نسبة</th>
             <th className="py-3 px-2 font-medium">نصيب الأخصائي</th>
             <th className="py-3 pl-2 font-medium"></th>
@@ -1350,7 +1402,10 @@ function SessionsTable({
         </thead>
         <tbody className="divide-y">
           {rows.map((s) => {
-            const share = (Number(s.cost) * Number(s.specialist_percentage)) / 100;
+            const gross = Number(s.cost);
+            const disc = Number(s.discount_percentage) || 0;
+            const net = gross * (1 - disc / 100);
+            const share = (net * Number(s.specialist_percentage)) / 100;
             return (
               <tr key={s.id} className="hover:bg-muted/40 transition-colors">
                 <td className="py-3 pr-2 font-medium align-top">
@@ -1361,7 +1416,9 @@ function SessionsTable({
                 <td className="py-3 px-2 text-muted-foreground">{s.session_type || "—"}{s.test_type && <span className="block text-xs text-primary">{s.test_type}</span>}</td>
                 <td className="py-3 px-2 text-muted-foreground" dir="ltr">{s.session_time.slice(0, 5)}</td>
                 <td className="py-3 px-2 text-muted-foreground">{s.duration_minutes} د</td>
-                <td className="py-3 px-2">{Number(s.cost).toFixed(2)}</td>
+                <td className="py-3 px-2">{gross.toFixed(2)}</td>
+                <td className="py-3 px-2 text-amber-700">{disc > 0 ? `${disc}%` : "—"}</td>
+                <td className="py-3 px-2 font-medium">{net.toFixed(2)}</td>
                 <td className="py-3 px-2">
                   <Select value={String(s.specialist_percentage)} onValueChange={(v) => onPercentage(s.id, +v)}>
                     <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
@@ -1383,7 +1440,7 @@ function SessionsTable({
         {totals && (
           <tfoot className="border-t-2 font-semibold">
             <tr>
-              <td className="py-3 pr-2" colSpan={4}>المجموع</td>
+              <td className="py-3 pr-2" colSpan={6}>المجموع (بعد الخصم)</td>
               <td className="py-3 px-2">{totals.totalCost.toFixed(2)}</td>
               <td className="py-3 px-2"></td>
               <td className="py-3 px-2 text-primary">{totals.specialistShare.toFixed(2)}</td>

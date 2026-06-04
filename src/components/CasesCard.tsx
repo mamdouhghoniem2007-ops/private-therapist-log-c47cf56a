@@ -44,6 +44,17 @@ type CaseRow = {
   start_date: string;
   active: boolean;
   notes: string | null;
+  payment_type: string;
+  discount_percentage: number;
+};
+
+const PAYMENT_TYPE_OPTIONS = [
+  { value: "per_session", label: "بالجلسة" },
+  { value: "monthly", label: "بالشهر" },
+];
+const PAYMENT_TYPE_LABEL: Record<string, string> = {
+  per_session: "بالجلسة",
+  monthly: "بالشهر",
 };
 
 const DAY_LABELS = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
@@ -129,6 +140,8 @@ export function CasesCard({
       default_specialist_percentage: editDraft.default_specialist_percentage,
       default_session_kind: editDraft.default_session_kind,
       default_session_subtype: editDraft.default_session_subtype,
+      payment_type: editDraft.payment_type || "per_session",
+      discount_percentage: Number(editDraft.discount_percentage) || 0,
       start_date: editDraft.start_date,
       notes: editDraft.notes,
     }).eq("id", editDraft.id);
@@ -202,6 +215,8 @@ export function CasesCard({
   const [sessionKind, setSessionKind] = useState<string>("regular");
   const [sessionSubtype, setSessionSubtype] = useState<string>(defaultSubtypeFor("regular"));
   const [startDate, setStartDate] = useState(today());
+  const [paymentType, setPaymentType] = useState<string>("per_session");
+  const [discountPct, setDiscountPct] = useState<number | "">("");
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -226,6 +241,7 @@ export function CasesCard({
   const resetForm = () => {
     setName(""); setWhatsapp(""); setDays([]); setCost(""); setCostSelect("");
     setSessionKind("regular"); setSessionSubtype(defaultSubtypeFor("regular"));
+    setPaymentType("per_session"); setDiscountPct("");
     setShowForm(false);
   };
 
@@ -236,6 +252,8 @@ export function CasesCard({
     if (!specialistId) return toast.error("اختر الأخصائي");
     if (days.length === 0) return toast.error("اختر أيام الأسبوع");
     if (cost === "" || cost < 0) return toast.error("أدخل سعر الجلسة");
+    const disc = discountPct === "" ? 0 : Number(discountPct);
+    if (disc < 0 || disc > 100) return toast.error("نسبة الخصم بين 0 و 100");
     setSubmitting(true);
     const { error } = await supabase.from("cases").insert({
       name: name.trim(),
@@ -248,7 +266,8 @@ export function CasesCard({
       default_specialist_percentage: percentage,
       default_session_kind: sessionKind,
       default_session_subtype: sessionSubtype,
-
+      payment_type: paymentType,
+      discount_percentage: disc,
       start_date: startDate,
       active: true,
       created_by: user.id,
@@ -427,6 +446,25 @@ export function CasesCard({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>طريقة الدفع</Label>
+              <Select value={paymentType} onValueChange={setPaymentType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_TYPE_OPTIONS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>نسبة الخصم %</Label>
+              <Input
+                type="number" min={0} max={100} step="0.01"
+                value={discountPct}
+                onChange={(e) => setDiscountPct(e.target.value === "" ? "" : +e.target.value)}
+                placeholder="0"
+              />
+            </div>
+
 
             <div className="sm:col-span-2 lg:col-span-4">
               <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
@@ -459,6 +497,10 @@ export function CasesCard({
                       <span dir="ltr"> · {c.recurring_time.slice(0, 5)}</span>
                       {" · "}{c.default_duration_minutes} د
                       {" · "}{Number(c.default_cost).toFixed(2)} ({c.default_specialist_percentage}%)
+                      {" · "}{PAYMENT_TYPE_LABEL[c.payment_type] || "بالجلسة"}
+                      {Number(c.discount_percentage) > 0 && (
+                        <span className="text-amber-700"> · خصم {Number(c.discount_percentage)}%</span>
+                      )}
                       {c.whatsapp && <span dir="ltr"> · {c.whatsapp}</span>}
                     </p>
                   </div>
@@ -623,6 +665,24 @@ export function CasesCard({
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label>طريقة الدفع</Label>
+                      <Select value={editDraft.payment_type || "per_session"} onValueChange={(v) => setEditDraft({ ...editDraft, payment_type: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {PAYMENT_TYPE_OPTIONS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>نسبة الخصم %</Label>
+                      <Input
+                        type="number" min={0} max={100} step="0.01"
+                        value={editDraft.discount_percentage ?? 0}
+                        onChange={(e) => setEditDraft({ ...editDraft, discount_percentage: e.target.value === "" ? 0 : +e.target.value })}
+                      />
+                    </div>
+
 
                     <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
                       <Label>ملاحظات</Label>
