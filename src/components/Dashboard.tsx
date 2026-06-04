@@ -346,16 +346,20 @@ export function Dashboard({ user }: { user: User }) {
       let sCost = appt.cost != null ? Number(appt.cost) : 0;
       let sPct = Number(appt.specialist_percentage) || 50;
       let sDur = Number(appt.duration_minutes) || 45;
-      if (!sCost && appt.case_id) {
+      let sDisc = Number(appt.discount_percentage) || 0;
+      let sPay = appt.payment_type || "per_session";
+      if (appt.case_id && (!sCost || !sDisc)) {
         const { data: caseRow } = await supabase
           .from("cases")
-          .select("default_cost, default_specialist_percentage, default_duration_minutes")
+          .select("default_cost, default_specialist_percentage, default_duration_minutes, discount_percentage, payment_type")
           .eq("id", appt.case_id)
           .maybeSingle();
         if (caseRow) {
-          sCost = Number(caseRow.default_cost) || 0;
+          if (!sCost) sCost = Number(caseRow.default_cost) || 0;
           if (!appt.specialist_percentage) sPct = Number(caseRow.default_specialist_percentage) || 50;
           sDur = Number(caseRow.default_duration_minutes) || sDur;
+          if (!appt.discount_percentage) sDisc = Number((caseRow as any).discount_percentage) || 0;
+          if (!appt.payment_type) sPay = (caseRow as any).payment_type || "per_session";
         }
       }
       const { data: existing } = await supabase
@@ -375,6 +379,8 @@ export function Dashboard({ user }: { user: User }) {
           duration_minutes: sDur,
           cost: sCost,
           specialist_percentage: sPct,
+          discount_percentage: sDisc,
+          payment_type: sPay,
           session_type: appt.session_type,
           test_type: appt.test_type,
           notes: appt.notes,
