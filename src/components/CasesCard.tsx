@@ -140,6 +140,8 @@ export function CasesCard({
       default_specialist_percentage: editDraft.default_specialist_percentage,
       default_session_kind: editDraft.default_session_kind,
       default_session_subtype: editDraft.default_session_subtype,
+      payment_type: editDraft.payment_type || "per_session",
+      discount_percentage: Number(editDraft.discount_percentage) || 0,
       start_date: editDraft.start_date,
       notes: editDraft.notes,
     }).eq("id", editDraft.id);
