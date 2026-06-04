@@ -213,6 +213,8 @@ export function CasesCard({
   const [sessionKind, setSessionKind] = useState<string>("regular");
   const [sessionSubtype, setSessionSubtype] = useState<string>(defaultSubtypeFor("regular"));
   const [startDate, setStartDate] = useState(today());
+  const [paymentType, setPaymentType] = useState<string>("per_session");
+  const [discountPct, setDiscountPct] = useState<number | "">("");
 
   const [submitting, setSubmitting] = useState(false);
 
