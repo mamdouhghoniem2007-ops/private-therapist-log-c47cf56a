@@ -22,10 +22,12 @@ export type Database = {
           cost: number | null
           created_at: string
           created_by: string | null
+          discount_percentage: number
           duration_minutes: number
           ended_at: string | null
           id: string
           notes: string | null
+          payment_type: string
           scheduled_date: string
           scheduled_time: string
           session_kind: string
@@ -43,10 +45,12 @@ export type Database = {
           cost?: number | null
           created_at?: string
           created_by?: string | null
+          discount_percentage?: number
           duration_minutes?: number
           ended_at?: string | null
           id?: string
           notes?: string | null
+          payment_type?: string
           scheduled_date: string
           scheduled_time: string
           session_kind?: string
@@ -64,10 +68,12 @@ export type Database = {
           cost?: number | null
           created_at?: string
           created_by?: string | null
+          discount_percentage?: number
           duration_minutes?: number
           ended_at?: string | null
           id?: string
           notes?: string | null
+          payment_type?: string
           scheduled_date?: string
           scheduled_time?: string
           session_kind?: string
@@ -123,9 +129,11 @@ export type Database = {
           default_session_kind: string
           default_session_subtype: string | null
           default_specialist_percentage: number
+          discount_percentage: number
           id: string
           name: string
           notes: string | null
+          payment_type: string
           recurring_days: number[]
           recurring_time: string
           specialist_id: string
@@ -142,9 +150,11 @@ export type Database = {
           default_session_kind?: string
           default_session_subtype?: string | null
           default_specialist_percentage?: number
+          discount_percentage?: number
           id?: string
           name: string
           notes?: string | null
+          payment_type?: string
           recurring_days?: number[]
           recurring_time: string
           specialist_id: string
@@ -161,9 +171,11 @@ export type Database = {
           default_session_kind?: string
           default_session_subtype?: string | null
           default_specialist_percentage?: number
+          discount_percentage?: number
           id?: string
           name?: string
           notes?: string | null
+          payment_type?: string
           recurring_days?: number[]
           recurring_time?: string
           specialist_id?: string
@@ -199,9 +211,11 @@ export type Database = {
           case_name: string
           cost: number
           created_at: string
+          discount_percentage: number
           duration_minutes: number
           id: string
           notes: string | null
+          payment_type: string
           session_date: string
           session_time: string
           session_type: string | null
@@ -213,9 +227,11 @@ export type Database = {
           case_name: string
           cost: number
           created_at?: string
+          discount_percentage?: number
           duration_minutes: number
           id?: string
           notes?: string | null
+          payment_type?: string
           session_date: string
           session_time: string
           session_type?: string | null
@@ -227,9 +243,11 @@ export type Database = {
           case_name?: string
           cost?: number
           created_at?: string
+          discount_percentage?: number
           duration_minutes?: number
           id?: string
           notes?: string | null
+          payment_type?: string
           session_date?: string
           session_time?: string
           session_type?: string | null
