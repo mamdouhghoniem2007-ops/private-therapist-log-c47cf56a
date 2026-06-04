@@ -497,6 +497,10 @@ export function CasesCard({
                       <span dir="ltr"> · {c.recurring_time.slice(0, 5)}</span>
                       {" · "}{c.default_duration_minutes} د
                       {" · "}{Number(c.default_cost).toFixed(2)} ({c.default_specialist_percentage}%)
+                      {" · "}{PAYMENT_TYPE_LABEL[c.payment_type] || "بالجلسة"}
+                      {Number(c.discount_percentage) > 0 && (
+                        <span className="text-amber-700"> · خصم {Number(c.discount_percentage)}%</span>
+                      )}
                       {c.whatsapp && <span dir="ltr"> · {c.whatsapp}</span>}
                     </p>
                   </div>
