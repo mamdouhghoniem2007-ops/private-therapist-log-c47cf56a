@@ -762,13 +762,13 @@ export function Dashboard({ user }: { user: User }) {
       for (const s of rows) {
         const name = profilesMap[s.specialist_id] || (s.specialist_id === user.id ? profileName : "—");
         if (!sum[s.specialist_id]) sum[s.specialist_id] = { name, count: 0, total: 0, share: 0 };
-        const c = Number(s.cost);
+        const c = netCost(s.cost, s.discount_percentage);
         sum[s.specialist_id].count += 1;
         sum[s.specialist_id].total += c;
         sum[s.specialist_id].share += (c * Number(s.specialist_percentage)) / 100;
       }
       summaryHtml = `<h3>ملخص حسب الأخصائي</h3>
-      <table><thead><tr><th>الأخصائي</th><th>عدد الجلسات</th><th>الإجمالي</th><th>نصيب الأخصائي</th><th>نصيب المركز</th></tr></thead>
+      <table><thead><tr><th>الأخصائي</th><th>عدد الجلسات</th><th>الإجمالي بعد الخصم</th><th>نصيب الأخصائي</th><th>نصيب المركز</th></tr></thead>
       <tbody>${Object.values(sum).map((g) => `<tr><td>${g.name}</td><td>${g.count}</td><td>${g.total.toFixed(2)}</td><td>${g.share.toFixed(2)}</td><td>${(g.total - g.share).toFixed(2)}</td></tr>`).join("")}</tbody></table>`;
     }
 
