@@ -44,6 +44,17 @@ type CaseRow = {
   start_date: string;
   active: boolean;
   notes: string | null;
+  payment_type: string;
+  discount_percentage: number;
+};
+
+const PAYMENT_TYPE_OPTIONS = [
+  { value: "per_session", label: "بالجلسة" },
+  { value: "monthly", label: "بالشهر" },
+];
+const PAYMENT_TYPE_LABEL: Record<string, string> = {
+  per_session: "بالجلسة",
+  monthly: "بالشهر",
 };
 
 const DAY_LABELS = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
