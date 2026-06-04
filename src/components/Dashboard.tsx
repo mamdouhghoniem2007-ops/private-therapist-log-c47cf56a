@@ -39,7 +39,8 @@ type Session = {
   session_type: string | null;
   test_type: string | null;
   notes: string | null;
-
+  discount_percentage: number;
+  payment_type: string;
 };
 
 type Appointment = {
@@ -60,6 +61,8 @@ type Appointment = {
   ended_at: string | null;
   session_kind: SessionKind;
   case_id: string | null;
+  discount_percentage: number;
+  payment_type: string;
 };
 
 type Profile = { id: string; full_name: string };
