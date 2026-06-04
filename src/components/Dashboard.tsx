@@ -256,13 +256,15 @@ export function Dashboard({ user }: { user: User }) {
     const nowTime = new Date().toTimeString().slice(0, 5);
     const name = caseName.trim();
 
-    // اجلب القيم الافتراضية من ملف الحالة (السعر/النسبة/المدة) حتى يتسجّل نصيب الأخصائي والمركز
+    // اجلب القيم الافتراضية من ملف الحالة (السعر/النسبة/المدة/الخصم/طريقة الدفع)
     let sCost = 0;
     let sPct = 50;
     let sDur = 45;
+    let sDisc = 0;
+    let sPay = "per_session";
     const { data: caseRow } = await supabase
       .from("cases")
-      .select("default_cost, default_specialist_percentage, default_duration_minutes")
+      .select("default_cost, default_specialist_percentage, default_duration_minutes, discount_percentage, payment_type")
       .eq("specialist_id", user.id)
       .ilike("name", name)
       .maybeSingle();
@@ -270,6 +272,8 @@ export function Dashboard({ user }: { user: User }) {
       sCost = Number(caseRow.default_cost) || 0;
       sPct = Number(caseRow.default_specialist_percentage) || 50;
       sDur = Number(caseRow.default_duration_minutes) || 45;
+      sDisc = Number((caseRow as any).discount_percentage) || 0;
+      sPay = (caseRow as any).payment_type || "per_session";
     }
 
     const todayStr = today();
@@ -281,6 +285,8 @@ export function Dashboard({ user }: { user: User }) {
       duration_minutes: sDur,
       cost: sCost,
       specialist_percentage: sPct,
+      discount_percentage: sDisc,
+      payment_type: sPay,
       session_type: null,
       test_type: null,
       notes: sNotes.trim() || null,
