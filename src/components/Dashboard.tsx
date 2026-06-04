@@ -1224,7 +1224,8 @@ function AppointmentRow({
 }) {
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
-  const share = a.cost != null ? (Number(a.cost) * Number(a.specialist_percentage)) / 100 : null;
+  const netA = a.cost != null ? netCost(a.cost, a.discount_percentage) : null;
+  const share = netA != null ? (netA * Number(a.specialist_percentage)) / 100 : null;
   const isAttended = a.status === "attended";
   const isApologized = a.status === "apologized" || a.status === "cancelled";
   const isAbsent = a.status === "absent";
