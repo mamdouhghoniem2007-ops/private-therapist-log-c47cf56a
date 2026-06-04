@@ -1392,7 +1392,9 @@ function SessionsTable({
             <th className="py-3 px-2 font-medium">النوع</th>
             <th className="py-3 px-2 font-medium">الوقت</th>
             <th className="py-3 px-2 font-medium">المدة</th>
-            <th className="py-3 px-2 font-medium">التكلفة</th>
+            <th className="py-3 px-2 font-medium">السعر</th>
+            <th className="py-3 px-2 font-medium">الخصم</th>
+            <th className="py-3 px-2 font-medium">بعد الخصم</th>
             <th className="py-3 px-2 font-medium">نسبة</th>
             <th className="py-3 px-2 font-medium">نصيب الأخصائي</th>
             <th className="py-3 pl-2 font-medium"></th>
@@ -1400,7 +1402,10 @@ function SessionsTable({
         </thead>
         <tbody className="divide-y">
           {rows.map((s) => {
-            const share = (Number(s.cost) * Number(s.specialist_percentage)) / 100;
+            const gross = Number(s.cost);
+            const disc = Number(s.discount_percentage) || 0;
+            const net = gross * (1 - disc / 100);
+            const share = (net * Number(s.specialist_percentage)) / 100;
             return (
               <tr key={s.id} className="hover:bg-muted/40 transition-colors">
                 <td className="py-3 pr-2 font-medium align-top">
@@ -1411,7 +1416,9 @@ function SessionsTable({
                 <td className="py-3 px-2 text-muted-foreground">{s.session_type || "—"}{s.test_type && <span className="block text-xs text-primary">{s.test_type}</span>}</td>
                 <td className="py-3 px-2 text-muted-foreground" dir="ltr">{s.session_time.slice(0, 5)}</td>
                 <td className="py-3 px-2 text-muted-foreground">{s.duration_minutes} د</td>
-                <td className="py-3 px-2">{Number(s.cost).toFixed(2)}</td>
+                <td className="py-3 px-2">{gross.toFixed(2)}</td>
+                <td className="py-3 px-2 text-amber-700">{disc > 0 ? `${disc}%` : "—"}</td>
+                <td className="py-3 px-2 font-medium">{net.toFixed(2)}</td>
                 <td className="py-3 px-2">
                   <Select value={String(s.specialist_percentage)} onValueChange={(v) => onPercentage(s.id, +v)}>
                     <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
