@@ -588,20 +588,21 @@ export function Dashboard({ user }: { user: User }) {
       const k = s.specialist_id;
       if (!groups[k]) groups[k] = { name: profilesMap[k] || "—", rows: [], total: 0, share: 0, center: 0 };
       groups[k].rows.push(s);
-      const cost = Number(s.cost);
-      const share = (cost * Number(s.specialist_percentage)) / 100;
-      groups[k].total += cost;
+      const net = netCost(s.cost, s.discount_percentage);
+      const share = (net * Number(s.specialist_percentage)) / 100;
+      groups[k].total += net;
       groups[k].share += share;
-      groups[k].center += cost - share;
+      groups[k].center += net - share;
     }
     return Object.entries(groups).map(([id, g]) => ({ id, ...g }));
   }, [isAdmin, dayRows, profilesMap]);
 
   const totals = useMemo(() => {
-    const totalCost = dayRows.reduce((sum, s) => sum + Number(s.cost), 0);
-    const specialistShare = dayRows.reduce((sum, s) => sum + (Number(s.cost) * Number(s.specialist_percentage)) / 100, 0);
+    const totalCost = dayRows.reduce((sum, s) => sum + netCost(s.cost, s.discount_percentage), 0);
+    const specialistShare = dayRows.reduce((sum, s) => sum + (netCost(s.cost, s.discount_percentage) * Number(s.specialist_percentage)) / 100, 0);
     return { totalCost, specialistShare, centerShare: totalCost - specialistShare, count: dayRows.length };
   }, [dayRows]);
+
 
   const allUsersForRoles = useMemo(() => {
     return Object.entries(profilesMap)
