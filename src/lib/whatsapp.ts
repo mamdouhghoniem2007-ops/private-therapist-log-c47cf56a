@@ -1,3 +1,5 @@
+import { fmtTime12 } from "@/lib/utils";
+
 export function waLink(phone: string | null | undefined, message: string): string | null {
   if (!phone) return null;
   const digits = String(phone).replace(/\D/g, "");
