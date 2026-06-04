@@ -1263,7 +1263,7 @@ function AppointmentRow({
           {a.scheduled_time.slice(0, 5)} · {a.duration_minutes} د
           {startedTxt && <span dir="rtl"> · بدأت: {startedTxt}</span>}
           {endedTxt && <span dir="rtl"> · انتهت: {endedTxt}</span>}
-          {!hideFinancial && a.cost != null && !onCostChange && <span dir="rtl"> · تكلفة: {Number(a.cost).toFixed(2)}</span>}
+          {!hideFinancial && a.cost != null && !onCostChange && <span dir="rtl"> · تكلفة: {Number(a.cost).toFixed(2)}{Number(a.discount_percentage) > 0 && ` · خصم ${Number(a.discount_percentage)}% (الصافي ${netA?.toFixed(2)})`}</span>}
           {!hideFinancial && !onPercentageChange && <span dir="rtl"> · نسبة: {a.specialist_percentage}%</span>}
           {!hideFinancial && share != null && <span dir="rtl"> · نصيب الأخصائي: {share.toFixed(2)}</span>}
           {a.notes && <span dir="rtl"> · {a.notes}</span>}
