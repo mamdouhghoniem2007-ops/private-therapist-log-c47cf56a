@@ -636,8 +636,10 @@ export function Dashboard({ user }: { user: User }) {
   }, [appointments]);
 
   const sessionRowCsv = (s: Session) => {
-    const cost = Number(s.cost);
-    const share = (cost * Number(s.specialist_percentage)) / 100;
+    const gross = Number(s.cost);
+    const disc = Number(s.discount_percentage) || 0;
+    const net = netCost(gross, disc);
+    const share = (net * Number(s.specialist_percentage)) / 100;
     const a = apptMap[`${s.specialist_id}|${s.case_name}|${s.session_date}`];
     return [
       s.session_date,
@@ -649,18 +651,31 @@ export function Dashboard({ user }: { user: User }) {
       s.session_type || "",
       s.test_type || "",
       s.duration_minutes,
-      cost.toFixed(2),
+      gross.toFixed(2),
+      disc + "%",
+      net.toFixed(2),
       s.specialist_percentage,
       share.toFixed(2),
-      (cost - share).toFixed(2),
+      (net - share).toFixed(2),
+      (s.payment_type === "monthly" ? "بالشهر" : "بالجلسة"),
       (s.notes || "").replace(/\n/g, " "),
     ].map(esc).join(",");
   };
-  const sessionHeaders = ["التاريخ", "الوقت المجدول", "بداية الجلسة", "نهاية الجلسة", "الأخصائي", "اسم الحالة", "نوع الجلسة", "نوع الاختبار", "المدة (دقيقة)", "التكلفة", "نسبة الأخصائي %", "نصيب الأخصائي", "نصيب المركز", "ملاحظات"];
+  const sessionHeaders = ["التاريخ", "الوقت المجدول", "بداية الجلسة", "نهاية الجلسة", "الأخصائي", "اسم الحالة", "نوع الجلسة", "نوع الاختبار", "المدة (دقيقة)", "السعر الأصلي", "الخصم", "السعر بعد الخصم", "نسبة الأخصائي %", "نصيب الأخصائي", "نصيب المركز", "طريقة الدفع", "ملاحظات"];
+
+  const padTotalRow = (label: string, total: number, share: number, center: number) => {
+    // Match column count of sessionHeaders. Place totals in the cost/share columns.
+    const row: (string | number)[] = new Array(sessionHeaders.length).fill("");
+    row[8] = label; // "الإجمالي" under duration column
+    row[11] = total.toFixed(2); // السعر بعد الخصم
+    row[13] = share.toFixed(2); // نصيب الأخصائي
+    row[14] = center.toFixed(2); // نصيب المركز
+    return row.map(esc).join(",");
+  };
 
   const downloadDailySheet = () => {
     const rows = dayRows.map(sessionRowCsv);
-    const totalRow = ["", "", "", "", "", "", "", "", "الإجمالي", totals.totalCost.toFixed(2), "", totals.specialistShare.toFixed(2), totals.centerShare.toFixed(2), ""].map(esc).join(",");
+    const totalRow = padTotalRow("الإجمالي", totals.totalCost, totals.specialistShare, totals.centerShare);
     triggerDownload(`جلسات-${filterDate}.csv`, [sessionHeaders.map(esc).join(","), ...rows, totalRow].join("\n"));
     toast.success("تم تنزيل الشيت اليومي");
   };
@@ -676,9 +691,10 @@ export function Dashboard({ user }: { user: User }) {
     if (error) return toast.error(error.message);
     const monthRows = ((data as Session[]) || []);
     const rows = monthRows.map(sessionRowCsv);
-    const totalCost = monthRows.reduce((sum, s) => sum + Number(s.cost), 0);
-    const specShare = monthRows.reduce((sum, s) => sum + (Number(s.cost) * Number(s.specialist_percentage)) / 100, 0);
-    const totalRow = ["", "", "", "", "", "", "", "", "الإجمالي", totalCost.toFixed(2), "", specShare.toFixed(2), (totalCost - specShare).toFixed(2), ""].map(esc).join(",");
+    const totalCost = monthRows.reduce((sum, s) => sum + netCost(s.cost, s.discount_percentage), 0);
+    const specShare = monthRows.reduce((sum, s) => sum + (netCost(s.cost, s.discount_percentage) * Number(s.specialist_percentage)) / 100, 0);
+    const totalRow = padTotalRow("الإجمالي", totalCost, specShare, totalCost - specShare);
+
 
     // Summary per specialist
     const sum: Record<string, { name: string; count: number; total: number; share: number }> = {};
