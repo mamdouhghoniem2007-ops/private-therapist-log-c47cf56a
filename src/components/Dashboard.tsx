@@ -90,6 +90,12 @@ const TEST_TYPES = [
 const ROLE_LABEL: Record<Role, string> = { admin: "مدير", supervisor: "مشرف", specialist: "أخصائي" };
 
 
+const netCost = (cost: number | null | undefined, discountPct: number | null | undefined) => {
+  const c = Number(cost) || 0;
+  const d = Math.max(0, Math.min(100, Number(discountPct) || 0));
+  return c * (1 - d / 100);
+};
+
 export function Dashboard({ user }: { user: User }) {
   const [profileName, setProfileName] = useState<string>("");
   const [role, setRole] = useState<Role>("specialist");
