@@ -19,7 +19,7 @@ export function formatAppointmentMessage(opts: {
   const dateTxt = isNaN(d.getTime())
     ? opts.date
     : d.toLocaleDateString("ar-EG", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const timeTxt = opts.time.slice(0, 5);
+  const timeTxt = fmtTime12(opts.time);
   const lines = [
     `📋 *تأكيد موعد جلسة — ${opts.caseName}*`,
     ``,
