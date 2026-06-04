@@ -239,6 +239,7 @@ export function CasesCard({
   const resetForm = () => {
     setName(""); setWhatsapp(""); setDays([]); setCost(""); setCostSelect("");
     setSessionKind("regular"); setSessionSubtype(defaultSubtypeFor("regular"));
+    setPaymentType("per_session"); setDiscountPct("");
     setShowForm(false);
   };
 
@@ -249,6 +250,8 @@ export function CasesCard({
     if (!specialistId) return toast.error("اختر الأخصائي");
     if (days.length === 0) return toast.error("اختر أيام الأسبوع");
     if (cost === "" || cost < 0) return toast.error("أدخل سعر الجلسة");
+    const disc = discountPct === "" ? 0 : Number(discountPct);
+    if (disc < 0 || disc > 100) return toast.error("نسبة الخصم بين 0 و 100");
     setSubmitting(true);
     const { error } = await supabase.from("cases").insert({
       name: name.trim(),
@@ -261,7 +264,8 @@ export function CasesCard({
       default_specialist_percentage: percentage,
       default_session_kind: sessionKind,
       default_session_subtype: sessionSubtype,
-
+      payment_type: paymentType,
+      discount_percentage: disc,
       start_date: startDate,
       active: true,
       created_by: user.id,
