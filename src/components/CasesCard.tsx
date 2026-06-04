@@ -446,6 +446,25 @@ export function CasesCard({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>طريقة الدفع</Label>
+              <Select value={paymentType} onValueChange={setPaymentType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_TYPE_OPTIONS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>نسبة الخصم %</Label>
+              <Input
+                type="number" min={0} max={100} step="0.01"
+                value={discountPct}
+                onChange={(e) => setDiscountPct(e.target.value === "" ? "" : +e.target.value)}
+                placeholder="0"
+              />
+            </div>
+
 
             <div className="sm:col-span-2 lg:col-span-4">
               <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
