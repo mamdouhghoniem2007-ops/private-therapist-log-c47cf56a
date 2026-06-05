@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save } from "lucide-react";
+import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText } from "lucide-react";
 import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 import { fmtTime12 } from "@/lib/utils";
 
@@ -203,7 +203,119 @@ export function CasesCard({
     toast.success("تم تسجيل غياب الحالة اليوم 🔴");
   };
 
-  // form
+  const openCaseLog = async (c: CaseRow) => {
+    const todayStr = today();
+    // اجلب كل الجلسات السابقة للحالة حتى تاريخ اليوم (تراكمي)
+    const { data: sData, error: sErr } = await supabase
+      .from("sessions")
+      .select("session_date, session_time, duration_minutes, session_type, test_type, notes, specialist_id")
+      .ilike("case_name", c.name)
+      .lte("session_date", todayStr)
+      .order("session_date", { ascending: true })
+      .order("session_time", { ascending: true });
+    if (sErr) { toast.error(sErr.message); return; }
+
+    // اجلب أيضًا المواعيد التي تم اعتذارها/غيابها لإظهارها في السجل
+    const { data: aData } = await supabase
+      .from("appointments")
+      .select("scheduled_date, scheduled_time, duration_minutes, session_kind, status, notes, specialist_id")
+      .eq("case_id", c.id)
+      .in("status", ["apologized", "cancelled", "absent"])
+      .lte("scheduled_date", todayStr)
+      .order("scheduled_date", { ascending: true });
+
+    type Row = {
+      date: string; time: string; duration: number;
+      kind: string; status: string; notes: string; specialistId: string;
+    };
+    const rows: Row[] = [
+      ...((sData as any[]) || []).map((s) => ({
+        date: s.session_date,
+        time: s.session_time,
+        duration: s.duration_minutes,
+        kind: s.test_type || s.session_type || "جلسة",
+        status: "تمت",
+        notes: s.notes || "",
+        specialistId: s.specialist_id,
+      })),
+      ...((aData as any[]) || []).map((a) => ({
+        date: a.scheduled_date,
+        time: a.scheduled_time,
+        duration: a.duration_minutes,
+        kind: KIND_LABEL[a.session_kind] || a.session_kind,
+        status: a.status === "absent" ? "غياب" : "اعتذار",
+        notes: a.notes || "",
+        specialistId: a.specialist_id,
+      })),
+    ].sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time));
+
+    const esc = (v: any) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const headers = ["التاريخ", "الوقت", "المدة (د)", "النوع", "الحالة", "الأخصائي", "ما تم خلال الجلسة"];
+    const csvRows = rows.map((r) => [
+      r.date,
+      fmtTime12(r.time),
+      r.duration,
+      r.kind,
+      r.status,
+      profilesMap[r.specialistId] || "—",
+      r.notes.replace(/\n/g, " "),
+    ].map(esc).join(","));
+    const csv = "\uFEFF" + [headers.map(esc).join(","), ...csvRows].join("\n");
+    const csvDataUri = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+    const fileName = `سجل-${c.name}-${todayStr}.csv`;
+
+    const bodyRows = rows.map((r) => `
+      <tr class="${r.status === "تمت" ? "" : "row-skip"}">
+        <td>${r.date}</td>
+        <td>${fmtTime12(r.time)}</td>
+        <td>${r.duration}</td>
+        <td>${r.kind}</td>
+        <td>${r.status}</td>
+        <td>${profilesMap[r.specialistId] || "—"}</td>
+        <td class="notes">${(r.notes || "").replace(/</g, "&lt;").replace(/\n/g, "<br>")}</td>
+      </tr>`).join("");
+
+    const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+    <title>السجل التراكمي - ${c.name}</title>
+    <style>
+      body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:22px;color:#111}
+      h1{margin:0 0 4px;font-size:20px}
+      .meta{color:#555;font-size:12px;margin-bottom:14px}
+      table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+      th,td{border:1px solid #999;padding:6px 7px;text-align:center;vertical-align:top}
+      td.notes{text-align:right;max-width:380px;white-space:pre-wrap}
+      thead{background:#f0f0f0}
+      .row-skip{background:#fff5f0;color:#7a3a00}
+      .toolbar{margin:0 0 14px;display:flex;gap:10px;flex-wrap:wrap}
+      .toolbar a,.toolbar button{padding:8px 14px;font-size:13px;border:1px solid #888;border-radius:6px;background:#fafafa;cursor:pointer;text-decoration:none;color:#111}
+      @media print { .noprint{display:none} body{padding:10px} }
+    </style></head><body>
+    <h1>السجل التراكمي للحالة: ${c.name}</h1>
+    <div class="meta">
+      الأخصائي: ${profilesMap[c.specialist_id] || "—"} ·
+      عدد القيود: ${rows.length} ·
+      تاريخ الاطلاع: ${new Date().toLocaleString("ar-EG")}
+    </div>
+    <div class="toolbar noprint">
+      <button onclick="window.print()">طباعة</button>
+      <a href="${csvDataUri}" download="${fileName}">تنزيل Excel/CSV</a>
+    </div>
+    <table>
+      <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${bodyRows || `<tr><td colspan="${headers.length}">لا توجد جلسات سابقة</td></tr>`}</tbody>
+    </table>
+    </body></html>`;
+
+    const w = window.open("", "_blank");
+    if (!w) { toast.error("فشل فتح نافذة السجل — تأكد من السماح بالنوافذ المنبثقة"); return; }
+    w.document.write(html);
+    w.document.close();
+  };
+
+
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [specialistId, setSpecialistId] = useState("");
@@ -510,6 +622,10 @@ export function CasesCard({
                       <Calendar className="h-4 w-4 ml-1" />
                       المواعيد
                       {expanded[c.id] ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => openCaseLog(c)} title="السجل التراكمي لكل الجلسات السابقة">
+                      <FileText className="h-4 w-4 ml-1" />
+                      السجل
                     </Button>
                     {role === "specialist" && c.specialist_id === user.id && c.active && (
                       <Button
