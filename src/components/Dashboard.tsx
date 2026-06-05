@@ -338,8 +338,25 @@ export function Dashboard({ user }: { user: User }) {
       notes,
       created_by: user.id,
     });
+    if (error) { setSubmitting(false); return toast.error(error.message); }
+
+    // اعكس نفس القيد في جدول الجلسات عشان يظهر في الشيت اليومي/الشهري
+    await supabase.from("sessions").insert({
+      specialist_id: user.id,
+      case_name: name,
+      session_date: todayStr,
+      session_time: nowTime,
+      duration_minutes: sDur,
+      cost: sCost,
+      specialist_percentage: sPct,
+      discount_percentage: sDisc,
+      payment_type: sPay,
+      session_type: null,
+      test_type: null,
+      notes,
+    });
+
     setSubmitting(false);
-    if (error) return toast.error(error.message);
     toast.success("تم تسجيل الجلسة بنجاح ✅", {
       description: `الحالة: ${name} · ${todayStr}${caseRow ? "" : " · تنبيه: لا يوجد ملف حالة بهذا الاسم، السعر = 0"}`,
       duration: 5000,
