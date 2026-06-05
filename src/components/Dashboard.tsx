@@ -256,8 +256,56 @@ export function Dashboard({ user }: { user: User }) {
     setSubmitting(true);
     const nowTime = new Date().toTimeString().slice(0, 5);
     const name = caseName.trim();
+    const todayStr = today();
+    const notes = sNotes.trim() || null;
 
-    // اجلب القيم الافتراضية من ملف الحالة (السعر/النسبة/المدة/الخصم/طريقة الدفع)
+    // 1) لو فيه موعد مجدول لنفس الحالة اليوم من الإدارة → سجِّل الحضور عليه بدل إنشاء جلسة منفصلة
+    const existingAppt = appointments.find(
+      (a) =>
+        a.specialist_id === user.id &&
+        a.scheduled_date === todayStr &&
+        a.case_name.trim().toLowerCase() === name.toLowerCase() &&
+        a.status !== "attended",
+    );
+    if (existingAppt) {
+      // ادمج الملاحظات على الموعد نفسه ثم علِّم الحضور (يولّد سطر الجلسة تلقائيًا)
+      if (notes) {
+        const merged = existingAppt.notes ? `${existingAppt.notes}\n${notes}` : notes;
+        await supabase.from("appointments").update({ notes: merged }).eq("id", existingAppt.id);
+      }
+      await setAppointmentAttendance(existingAppt.id, "attended");
+      setSubmitting(false);
+      toast.success("تم تسجيل الجلسة على الموعد المجدول ✅", {
+        description: `الحالة: ${name} · ${todayStr}`,
+        duration: 5000,
+      });
+      setCaseName(""); setSNotes("");
+      return;
+    }
+
+    // 2) لو فيه جلسة مسجلة بالفعل لنفس الحالة اليوم → حدّث الملاحظات بدل التكرار
+    const existingSession = sessions.find(
+      (s) =>
+        s.specialist_id === user.id &&
+        s.session_date === todayStr &&
+        s.case_name.trim().toLowerCase() === name.toLowerCase(),
+    );
+    if (existingSession) {
+      if (notes) {
+        const merged = existingSession.notes ? `${existingSession.notes}\n${notes}` : notes;
+        await supabase.from("sessions").update({ notes: merged }).eq("id", existingSession.id);
+      }
+      setSubmitting(false);
+      toast.success("تم تحديث جلسة اليوم بدلًا من تكرارها ✅", {
+        description: `الحالة: ${name} · ${todayStr}`,
+        duration: 5000,
+      });
+      setCaseName(""); setSNotes("");
+      loadAll();
+      return;
+    }
+
+    // 3) لا يوجد موعد ولا جلسة سابقة → أنشئ جلسة جديدة بالقيم الافتراضية من ملف الحالة
     let sCost = 0;
     let sPct = 50;
     let sDur = 45;
@@ -277,7 +325,6 @@ export function Dashboard({ user }: { user: User }) {
       sPay = (caseRow as any).payment_type || "per_session";
     }
 
-    const todayStr = today();
     const { error } = await supabase.from("sessions").insert({
       specialist_id: user.id,
       case_name: name,
@@ -290,7 +337,7 @@ export function Dashboard({ user }: { user: User }) {
       payment_type: sPay,
       session_type: null,
       test_type: null,
-      notes: sNotes.trim() || null,
+      notes,
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
