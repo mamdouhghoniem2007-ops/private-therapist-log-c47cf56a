@@ -623,6 +623,10 @@ export function CasesCard({
                       المواعيد
                       {expanded[c.id] ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
                     </Button>
+                    <Button size="sm" variant="outline" onClick={() => openCaseLog(c)} title="السجل التراكمي لكل الجلسات السابقة">
+                      <FileText className="h-4 w-4 ml-1" />
+                      السجل
+                    </Button>
                     {role === "specialist" && c.specialist_id === user.id && c.active && (
                       <Button
                         size="sm"
