@@ -305,19 +305,21 @@ export function Dashboard({ user }: { user: User }) {
       return;
     }
 
-    // 3) لا يوجد موعد ولا جلسة سابقة → أنشئ جلسة جديدة بالقيم الافتراضية من ملف الحالة
+    // 3) لا يوجد موعد ولا جلسة سابقة → أنشئ موعدًا جديدًا مكتمل الحضور (نفس مسار قيد الإدارة)
     let sCost = 0;
     let sPct = 50;
     let sDur = 45;
     let sDisc = 0;
     let sPay = "per_session";
+    let caseId: string | null = null;
     const { data: caseRow } = await supabase
       .from("cases")
-      .select("default_cost, default_specialist_percentage, default_duration_minutes, discount_percentage, payment_type")
+      .select("id, default_cost, default_specialist_percentage, default_duration_minutes, discount_percentage, payment_type")
       .eq("specialist_id", user.id)
       .ilike("name", name)
       .maybeSingle();
     if (caseRow) {
+      caseId = (caseRow as any).id || null;
       sCost = Number(caseRow.default_cost) || 0;
       sPct = Number(caseRow.default_specialist_percentage) || 50;
       sDur = Number(caseRow.default_duration_minutes) || 45;
@@ -325,19 +327,26 @@ export function Dashboard({ user }: { user: User }) {
       sPay = (caseRow as any).payment_type || "per_session";
     }
 
-    const { error } = await supabase.from("sessions").insert({
+    const nowIso = new Date().toISOString();
+    const { error } = await supabase.from("appointments").insert({
       specialist_id: user.id,
       case_name: name,
-      session_date: todayStr,
-      session_time: nowTime,
+      case_id: caseId,
+      scheduled_date: todayStr,
+      scheduled_time: nowTime,
       duration_minutes: sDur,
       cost: sCost,
       specialist_percentage: sPct,
       discount_percentage: sDisc,
       payment_type: sPay,
+      session_kind: "regular",
       session_type: null,
       test_type: null,
+      status: "attended",
+      started_at: nowIso,
+      ended_at: nowIso,
       notes,
+      created_by: user.id,
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
