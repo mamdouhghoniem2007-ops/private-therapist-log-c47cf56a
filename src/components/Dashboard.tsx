@@ -259,44 +259,33 @@ export function Dashboard({ user }: { user: User }) {
     const todayStr = today();
     const notes = sNotes.trim() || null;
 
-    // 1) لو فيه موعد مجدول لنفس الحالة اليوم من الإدارة → سجِّل الحضور عليه بدل إنشاء جلسة منفصلة
+    // 1) لو فيه موعد لنفس الحالة اليوم (سواء مجدول أو تم حضوره) → ادمج الملاحظات على نفس القيد
     const existingAppt = appointments.find(
       (a) =>
         a.specialist_id === user.id &&
         a.scheduled_date === todayStr &&
-        a.case_name.trim().toLowerCase() === name.toLowerCase() &&
-        a.status !== "attended",
+        a.case_name.trim().toLowerCase() === name.toLowerCase(),
     );
     if (existingAppt) {
-      // ادمج الملاحظات على الموعد نفسه ثم علِّم الحضور (يولّد سطر الجلسة تلقائيًا)
+      const merged = notes
+        ? (existingAppt.notes ? `${existingAppt.notes}\n${notes}` : notes)
+        : existingAppt.notes;
       if (notes) {
-        const merged = existingAppt.notes ? `${existingAppt.notes}\n${notes}` : notes;
         await supabase.from("appointments").update({ notes: merged }).eq("id", existingAppt.id);
+        // حدّث ملاحظات قيد الجلسة المرتبط (لو موجود) عشان يفضل قيد واحد متّسق
+        await supabase
+          .from("sessions")
+          .update({ notes: merged })
+          .eq("specialist_id", existingAppt.specialist_id)
+          .eq("case_name", existingAppt.case_name)
+          .eq("session_date", existingAppt.scheduled_date)
+          .eq("session_time", existingAppt.scheduled_time);
       }
-      await setAppointmentAttendance(existingAppt.id, "attended");
+      if (existingAppt.status !== "attended") {
+        await setAppointmentAttendance(existingAppt.id, "attended");
+      }
       setSubmitting(false);
       toast.success("تم تسجيل الجلسة على الموعد المجدول ✅", {
-        description: `الحالة: ${name} · ${todayStr}`,
-        duration: 5000,
-      });
-      setCaseName(""); setSNotes("");
-      return;
-    }
-
-    // 2) لو فيه جلسة مسجلة بالفعل لنفس الحالة اليوم → حدّث الملاحظات بدل التكرار
-    const existingSession = sessions.find(
-      (s) =>
-        s.specialist_id === user.id &&
-        s.session_date === todayStr &&
-        s.case_name.trim().toLowerCase() === name.toLowerCase(),
-    );
-    if (existingSession) {
-      if (notes) {
-        const merged = existingSession.notes ? `${existingSession.notes}\n${notes}` : notes;
-        await supabase.from("sessions").update({ notes: merged }).eq("id", existingSession.id);
-      }
-      setSubmitting(false);
-      toast.success("تم تحديث جلسة اليوم بدلًا من تكرارها ✅", {
         description: `الحالة: ${name} · ${todayStr}`,
         duration: 5000,
       });
@@ -304,6 +293,7 @@ export function Dashboard({ user }: { user: User }) {
       loadAll();
       return;
     }
+
 
     // 3) لا يوجد موعد ولا جلسة سابقة → أنشئ موعدًا جديدًا مكتمل الحضور (نفس مسار قيد الإدارة)
     let sCost = 0;
