@@ -1222,6 +1222,9 @@ export function Dashboard({ user }: { user: User }) {
         {/* Admin: employees management (add / edit / delete) */}
         {isAdmin && <EmployeesCard currentUserId={user.id} onChanged={loadAll} />}
 
+        {/* Admin: per-specialist sessions/appointments/cases management */}
+        {isAdmin && <SpecialistsAdminCard specialists={specialists} />}
+
         {/* Sessions — admin (grouped) or specialist (own) */}
         {!isSupervisor && (
           loading ? (
