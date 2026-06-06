@@ -571,10 +571,14 @@ export function CasesCard({
             <div className="space-y-1.5">
               <Label>نسبة الخصم %</Label>
               <Input
-                type="number" min={0} max={100} step="0.01"
-                value={discountPct}
-                onChange={(e) => setDiscountPct(e.target.value === "" ? "" : +e.target.value)}
-                placeholder="0"
+                type="number" min={0} max={100} step="0.01" inputMode="decimal"
+                value={discountPct as any}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "") return setDiscountPct("");
+                  setDiscountPct(v as any);
+                }}
+                placeholder="مثال: 12.5"
               />
             </div>
 
@@ -794,9 +798,10 @@ export function CasesCard({
                     <div className="space-y-1.5">
                       <Label>نسبة الخصم %</Label>
                       <Input
-                        type="number" min={0} max={100} step="0.01"
-                        value={editDraft.discount_percentage ?? 0}
-                        onChange={(e) => setEditDraft({ ...editDraft, discount_percentage: e.target.value === "" ? 0 : +e.target.value })}
+                        type="number" min={0} max={100} step="0.01" inputMode="decimal"
+                        value={editDraft.discount_percentage ?? ""}
+                        onChange={(e) => setEditDraft({ ...editDraft, discount_percentage: e.target.value as any })}
+                        placeholder="مثال: 12.5"
                       />
                     </div>
 
