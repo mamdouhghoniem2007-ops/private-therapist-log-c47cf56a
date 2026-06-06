@@ -756,13 +756,13 @@ export function CasesCard({
                       )}
                     </div>
                     <div className="space-y-1.5">
-                      <Label>نسبة الأخصائي</Label>
-                      <Select value={String(editDraft.default_specialist_percentage)} onValueChange={(v) => setEditDraft({ ...editDraft, default_specialist_percentage: +v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {PERCENTAGE_OPTIONS.map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Label>نسبة الأخصائي %</Label>
+                      <Input
+                        type="number" min={0} max={100} step="0.01"
+                        value={editDraft.default_specialist_percentage ?? 0}
+                        onChange={(e) => setEditDraft({ ...editDraft, default_specialist_percentage: e.target.value === "" ? 0 : +e.target.value })}
+                        placeholder="مثال: 12.5"
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <Label>نوع الجلسة</Label>
