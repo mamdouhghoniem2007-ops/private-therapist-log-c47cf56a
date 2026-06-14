@@ -991,6 +991,38 @@ export function CasesCard({
           </div>
         )}
       </CardContent>
+
+      <Dialog open={!!logCase} onOpenChange={(o) => !o && closeQuickLog()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تسجيل جلسة — {logCase?.name}</DialogTitle>
+          </DialogHeader>
+          {logCase && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                سيتم تسجيل جلسة بتاريخ اليوم وقت الآن، بسعر {Number(logCase.default_cost).toFixed(2)} ومدة {logCase.default_duration_minutes} دقيقة، للأخصائي{" "}
+                <b>{profilesMap[logCase.specialist_id] || "—"}</b>.
+              </p>
+              <div className="space-y-1.5">
+                <Label>ما تم خلال الجلسة (اختياري)</Label>
+                <Textarea
+                  value={logNotes}
+                  onChange={(e) => setLogNotes(e.target.value)}
+                  rows={4}
+                  placeholder="ملاحظات الجلسة، الأنشطة، التقدم..."
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeQuickLog} disabled={logSubmitting}>إلغاء</Button>
+            <Button onClick={submitQuickLog} disabled={logSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {logSubmitting ? "جارٍ الحفظ..." : "حفظ الجلسة"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
+
