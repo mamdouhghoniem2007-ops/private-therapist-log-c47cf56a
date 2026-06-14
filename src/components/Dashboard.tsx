@@ -1032,7 +1032,14 @@ export function Dashboard({ user }: { user: User }) {
 
         {/* ========= Weekly schedule grid (admin/supervisor) ========= */}
         {canManageSchedule && (
-          <WeeklyScheduleGrid specialists={specialists} profilesMap={profilesMap} />
+          <WeeklyScheduleGrid
+            specialists={specialists}
+            profilesMap={profilesMap}
+            refreshKey={gridRefreshKey}
+            onEmptyCellClick={(date, time, specialistId) =>
+              openAddDialog({ preset: { date, time, specialistId }, attended: false })
+            }
+          />
         )}
 
 
