@@ -1380,6 +1380,9 @@ function AppointmentRow({
           اعتذرت اليوم
         </Button>
       )}
+      {onEdit && (
+        <Button size="sm" variant="outline" onClick={onEdit}>تعديل</Button>
+      )}
       {onRemove && (
         <Button variant="ghost" size="icon" onClick={onRemove}>
           <Trash2 className="h-4 w-4 text-destructive" />
