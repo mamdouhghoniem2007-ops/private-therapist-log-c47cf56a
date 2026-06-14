@@ -560,6 +560,11 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
               </Table>
             </div>
           </TabsContent>
+
+          <TabsContent value="availability" className="space-y-3">
+            <p className="text-sm text-muted-foreground">ساعات عمل {specialistName} الأسبوعية</p>
+            <AvailabilityEditor specialistId={specialistId} />
+          </TabsContent>
         </Tabs>
       </CardContent>
 
