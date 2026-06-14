@@ -895,6 +895,7 @@ export function CasesCard({
                       )}
                     </div>
                     )}
+                    {canSeeFinancial && (
                     <div className="space-y-1.5">
                       <Label>نسبة الأخصائي %</Label>
                       <Input
@@ -904,6 +905,7 @@ export function CasesCard({
                         placeholder="مثال: 12.5"
                       />
                     </div>
+                    )}
                     <div className="space-y-1.5">
                       <Label>نوع الجلسة</Label>
                       <Select value={editDraft.default_session_kind || "regular"} onValueChange={(v) => setEditDraft({ ...editDraft, default_session_kind: v, default_session_subtype: defaultSubtypeFor(v) })}>
