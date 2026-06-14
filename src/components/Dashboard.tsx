@@ -1094,10 +1094,24 @@ export function Dashboard({ user }: { user: User }) {
         {canManageSchedule && (
           <Card className="shadow-[var(--shadow-card)]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CalendarClock className="h-4 w-4 text-primary" />
-                جدول اليوم
-                <span className="text-xs text-muted-foreground font-normal">({allDayAppointments.length})</span>
+              <CardTitle className="text-base flex items-center justify-between gap-2 flex-wrap">
+                <span className="flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-primary" />
+                  جدول اليوم
+                  <span className="text-xs text-muted-foreground font-normal">({allDayAppointments.length})</span>
+                </span>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => openAddDialog({ preset: { date: filterDate }, attended: false })}>
+                    <CalendarPlus className="h-4 w-4 ml-1" />
+                    موعد جديد
+                  </Button>
+                  {isAdmin && (
+                    <Button size="sm" onClick={() => openAddDialog({ preset: { date: filterDate }, attended: true })}>
+                      <Plus className="h-4 w-4 ml-1" />
+                      جلسة طارئة
+                    </Button>
+                  )}
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1112,6 +1126,7 @@ export function Dashboard({ user }: { user: User }) {
                       subtitle={profilesMap[a.specialist_id] || "—"}
                       specialistName={profilesMap[a.specialist_id] || ""}
                       onRemove={() => removeAppointment(a.id)}
+                      onEdit={() => openEditDialog(a)}
                       onCostChange={isAdmin ? (v) => updateAppointmentCost(a.id, v) : undefined}
                       onPercentageChange={isAdmin ? (v) => updateAppointmentPercentage(a.id, v) : undefined}
                       hideFinancial={isSupervisor}
@@ -1125,6 +1140,21 @@ export function Dashboard({ user }: { user: User }) {
               )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Quick appointment dialog (add/edit) */}
+        {canManageSchedule && (
+          <QuickAppointmentDialog
+            open={dlgOpen}
+            onOpenChange={setDlgOpen}
+            specialists={specialists}
+            canSeeFinancial={!isSupervisor}
+            currentUserId={user.id}
+            appointment={dlgEditing}
+            preset={dlgPreset}
+            attendedByDefault={dlgAttended}
+            onSaved={onDialogSaved}
+          />
         )}
 
         {/* Attendance — all roles */}
