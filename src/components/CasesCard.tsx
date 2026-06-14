@@ -335,6 +335,113 @@ export function CasesCard({
 
   const [submitting, setSubmitting] = useState(false);
 
+  // Quick-log session dialog
+  const [logCase, setLogCase] = useState<CaseRow | null>(null);
+  const [logNotes, setLogNotes] = useState("");
+  const [logSubmitting, setLogSubmitting] = useState(false);
+
+  const openQuickLog = (c: CaseRow) => {
+    setLogCase(c);
+    setLogNotes("");
+  };
+  const closeQuickLog = () => {
+    setLogCase(null);
+    setLogNotes("");
+  };
+  const submitQuickLog = async () => {
+    if (!logCase) return;
+    setLogSubmitting(true);
+    const todayStr = today();
+    const nowTime = new Date().toTimeString().slice(0, 5);
+    const notes = logNotes.trim() || null;
+
+    // Check if there's already an appointment for this case today → merge
+    const { data: existingAppt } = await supabase
+      .from("appointments")
+      .select("id, notes, status")
+      .eq("case_id", logCase.id)
+      .eq("scheduled_date", todayStr)
+      .order("scheduled_time", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const nowIso = new Date().toISOString();
+
+    if (existingAppt) {
+      const merged = notes
+        ? ((existingAppt as any).notes ? `${(existingAppt as any).notes}\n${notes}` : notes)
+        : (existingAppt as any).notes;
+      await supabase.from("appointments")
+        .update({ notes: merged, status: "attended", started_at: nowIso, ended_at: nowIso })
+        .eq("id", (existingAppt as any).id);
+      // Ensure session row exists / update notes
+      const { data: existSess } = await supabase
+        .from("sessions").select("id")
+        .eq("specialist_id", logCase.specialist_id)
+        .eq("case_name", logCase.name)
+        .eq("session_date", todayStr)
+        .maybeSingle();
+      if (existSess) {
+        await supabase.from("sessions").update({ notes: merged }).eq("id", (existSess as any).id);
+      } else {
+        await supabase.from("sessions").insert({
+          specialist_id: logCase.specialist_id,
+          case_name: logCase.name,
+          session_date: todayStr,
+          session_time: nowTime,
+          duration_minutes: logCase.default_duration_minutes,
+          cost: Number(logCase.default_cost) || 0,
+          specialist_percentage: Number(logCase.default_specialist_percentage) || 50,
+          discount_percentage: Number(logCase.discount_percentage) || 0,
+          payment_type: logCase.payment_type || "per_session",
+          session_type: null,
+          test_type: null,
+          notes: merged,
+        });
+      }
+    } else {
+      const { error } = await supabase.from("appointments").insert({
+        specialist_id: logCase.specialist_id,
+        case_name: logCase.name,
+        case_id: logCase.id,
+        scheduled_date: todayStr,
+        scheduled_time: nowTime,
+        duration_minutes: logCase.default_duration_minutes,
+        cost: Number(logCase.default_cost) || 0,
+        specialist_percentage: Number(logCase.default_specialist_percentage) || 50,
+        discount_percentage: Number(logCase.discount_percentage) || 0,
+        payment_type: logCase.payment_type || "per_session",
+        session_kind: "regular",
+        session_type: null,
+        test_type: null,
+        status: "attended",
+        started_at: nowIso,
+        ended_at: nowIso,
+        notes,
+        created_by: user.id,
+      });
+      if (error) { setLogSubmitting(false); return toast.error(error.message); }
+      await supabase.from("sessions").insert({
+        specialist_id: logCase.specialist_id,
+        case_name: logCase.name,
+        session_date: todayStr,
+        session_time: nowTime,
+        duration_minutes: logCase.default_duration_minutes,
+        cost: Number(logCase.default_cost) || 0,
+        specialist_percentage: Number(logCase.default_specialist_percentage) || 50,
+        discount_percentage: Number(logCase.discount_percentage) || 0,
+        payment_type: logCase.payment_type || "per_session",
+        session_type: null,
+        test_type: null,
+        notes,
+      });
+    }
+    setLogSubmitting(false);
+    toast.success(`تم تسجيل جلسة الحالة "${logCase.name}" ✅`);
+    closeQuickLog();
+  };
+
+
 
   const load = useCallback(async () => {
     setLoading(true);
