@@ -84,11 +84,19 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }) {
   const [specialistId, setSpecialistId] = useState<string>("");
-  const [tab, setTab] = useState<"sessions" | "appointments" | "cases">("sessions");
+  const [tab, setTab] = useState<"sessions" | "appointments" | "cases" | "availability">("sessions");
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [appointments, setAppointments] = useState<AppointmentRow[]>([]);
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Date-range filter for sessions log
+  const monthStart = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  };
+  const [fromDate, setFromDate] = useState<string>(monthStart());
+  const [toDate, setToDate] = useState<string>(today());
 
   // edit dialog state
   const [editKind, setEditKind] = useState<null | "session" | "appointment" | "case">(null);
