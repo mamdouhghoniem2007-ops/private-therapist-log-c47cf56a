@@ -18,6 +18,7 @@ import { CasesCard } from "@/components/CasesCard";
 import { EmployeesCard } from "@/components/EmployeesCard";
 import { SpecialistsAdminCard } from "@/components/SpecialistsAdminCard";
 import { WeeklyScheduleGrid } from "@/components/WeeklyScheduleGrid";
+import { QuickAppointmentDialog, type AppointmentLite } from "@/components/QuickAppointmentDialog";
 
 type SessionKind = "regular" | "initial_assessment" | "test" | "periodic_assessment";
 const SESSION_KIND_LABEL: Record<SessionKind, string> = {
@@ -164,6 +165,37 @@ export function Dashboard({ user }: { user: User }) {
   const [aCaseWhatsapp, setACaseWhatsapp] = useState("");
   const [aSessionKind, setASessionKind] = useState<SessionKind>("regular");
   const [aSubmitting, setASubmitting] = useState(false);
+
+  // Quick appointment dialog (admin/supervisor: add new / edit existing)
+  const [dlgOpen, setDlgOpen] = useState(false);
+  const [dlgEditing, setDlgEditing] = useState<AppointmentLite | null>(null);
+  const [dlgPreset, setDlgPreset] = useState<{ date?: string; time?: string; specialistId?: string } | undefined>(undefined);
+  const [dlgAttended, setDlgAttended] = useState(false);
+  const [gridRefreshKey, setGridRefreshKey] = useState(0);
+
+  const openAddDialog = (opts?: { preset?: typeof dlgPreset; attended?: boolean }) => {
+    setDlgEditing(null);
+    setDlgPreset(opts?.preset);
+    setDlgAttended(!!opts?.attended);
+    setDlgOpen(true);
+  };
+  const openEditDialog = (a: Appointment) => {
+    setDlgEditing({
+      id: a.id, specialist_id: a.specialist_id, case_id: a.case_id, case_name: a.case_name,
+      scheduled_date: a.scheduled_date, scheduled_time: a.scheduled_time,
+      duration_minutes: a.duration_minutes, cost: a.cost,
+      specialist_percentage: Number(a.specialist_percentage),
+      discount_percentage: Number(a.discount_percentage),
+      payment_type: a.payment_type, status: a.status, notes: a.notes, case_whatsapp: a.case_whatsapp,
+    });
+    setDlgPreset(undefined);
+    setDlgAttended(false);
+    setDlgOpen(true);
+  };
+  const onDialogSaved = () => {
+    loadAll();
+    setGridRefreshKey((k) => k + 1);
+  };
 
 
   const isAdmin = role === "admin";
@@ -1000,7 +1032,14 @@ export function Dashboard({ user }: { user: User }) {
 
         {/* ========= Weekly schedule grid (admin/supervisor) ========= */}
         {canManageSchedule && (
-          <WeeklyScheduleGrid specialists={specialists} profilesMap={profilesMap} />
+          <WeeklyScheduleGrid
+            specialists={specialists}
+            profilesMap={profilesMap}
+            refreshKey={gridRefreshKey}
+            onEmptyCellClick={(date, time, specialistId) =>
+              openAddDialog({ preset: { date, time, specialistId }, attended: false })
+            }
+          />
         )}
 
 
@@ -1055,10 +1094,24 @@ export function Dashboard({ user }: { user: User }) {
         {canManageSchedule && (
           <Card className="shadow-[var(--shadow-card)]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CalendarClock className="h-4 w-4 text-primary" />
-                جدول اليوم
-                <span className="text-xs text-muted-foreground font-normal">({allDayAppointments.length})</span>
+              <CardTitle className="text-base flex items-center justify-between gap-2 flex-wrap">
+                <span className="flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-primary" />
+                  جدول اليوم
+                  <span className="text-xs text-muted-foreground font-normal">({allDayAppointments.length})</span>
+                </span>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => openAddDialog({ preset: { date: filterDate }, attended: false })}>
+                    <CalendarPlus className="h-4 w-4 ml-1" />
+                    موعد جديد
+                  </Button>
+                  {isAdmin && (
+                    <Button size="sm" onClick={() => openAddDialog({ preset: { date: filterDate }, attended: true })}>
+                      <Plus className="h-4 w-4 ml-1" />
+                      جلسة طارئة
+                    </Button>
+                  )}
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1073,6 +1126,7 @@ export function Dashboard({ user }: { user: User }) {
                       subtitle={profilesMap[a.specialist_id] || "—"}
                       specialistName={profilesMap[a.specialist_id] || ""}
                       onRemove={() => removeAppointment(a.id)}
+                      onEdit={() => openEditDialog(a)}
                       onCostChange={isAdmin ? (v) => updateAppointmentCost(a.id, v) : undefined}
                       onPercentageChange={isAdmin ? (v) => updateAppointmentPercentage(a.id, v) : undefined}
                       hideFinancial={isSupervisor}
@@ -1086,6 +1140,21 @@ export function Dashboard({ user }: { user: User }) {
               )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Quick appointment dialog (add/edit) */}
+        {canManageSchedule && (
+          <QuickAppointmentDialog
+            open={dlgOpen}
+            onOpenChange={setDlgOpen}
+            specialists={specialists}
+            canSeeFinancial={!isSupervisor}
+            currentUserId={user.id}
+            appointment={dlgEditing}
+            preset={dlgPreset}
+            attendedByDefault={dlgAttended}
+            onSaved={onDialogSaved}
+          />
         )}
 
         {/* Attendance — all roles */}
@@ -1150,7 +1219,7 @@ export function Dashboard({ user }: { user: User }) {
 }
 
 function AppointmentRow({
-  a, subtitle, actionLabel, onAction, onRemove, onCancel, onAttendance, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd, onRevert, canWhatsApp, specialistName,
+  a, subtitle, actionLabel, onAction, onRemove, onCancel, onAttendance, onCostChange, onPercentageChange, hideFinancial, onStart, onEnd, onRevert, canWhatsApp, specialistName, onEdit,
 }: {
   a: Appointment;
   subtitle?: string;
@@ -1167,6 +1236,7 @@ function AppointmentRow({
   onRevert?: () => void;
   canWhatsApp?: boolean;
   specialistName?: string;
+  onEdit?: () => void;
 }) {
   const [costDraft, setCostDraft] = useState<string>(a.cost != null ? String(a.cost) : "");
   useEffect(() => { setCostDraft(a.cost != null ? String(a.cost) : ""); }, [a.cost]);
@@ -1309,6 +1379,9 @@ function AppointmentRow({
         <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10" onClick={onCancel}>
           اعتذرت اليوم
         </Button>
+      )}
+      {onEdit && (
+        <Button size="sm" variant="outline" onClick={onEdit}>تعديل</Button>
       )}
       {onRemove && (
         <Button variant="ghost" size="icon" onClick={onRemove}>

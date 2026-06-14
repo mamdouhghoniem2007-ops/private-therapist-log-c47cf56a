@@ -65,9 +65,13 @@ const ymd = (d: Date) => {
 export function WeeklyScheduleGrid({
   specialists,
   profilesMap,
+  onEmptyCellClick,
+  refreshKey,
 }: {
   specialists: Profile[];
   profilesMap: Record<string, string>;
+  onEmptyCellClick?: (date: string, time: string, specialistId?: string) => void;
+  refreshKey?: number;
 }) {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfArabicWeek(new Date()));
   const [specialistFilter, setSpecialistFilter] = useState<string>("all");
@@ -98,7 +102,7 @@ export function WeeklyScheduleGrid({
       if (!avRes.error) setAvailability((avRes.data as Availability[]) || []);
       setLoading(false);
     })();
-  }, [weekStartStr, weekEndStr]);
+  }, [weekStartStr, weekEndStr, refreshKey]);
 
   const filtered = specialistFilter === "all"
     ? appts
@@ -227,8 +231,17 @@ export function WeeklyScheduleGrid({
                       const key = `${ymd(d)}|${slotMin}`;
                       const cellAppts = apptByCell[key] || [];
                       const avail = isAvailable(d, slotMin);
+                      const clickable = onEmptyCellClick && cellAppts.length === 0;
+                      const handleClick = clickable
+                        ? () => onEmptyCellClick!(ymd(d), fromMin(slotMin), specialistFilter !== "all" ? specialistFilter : undefined)
+                        : undefined;
                       return (
-                        <td key={dow} className={`border align-top p-0.5 h-10 ${avail && cellAppts.length === 0 ? "bg-emerald-500/5" : ""}`}>
+                        <td
+                          key={dow}
+                          onClick={handleClick}
+                          className={`border align-top p-0.5 h-10 ${avail && cellAppts.length === 0 ? "bg-emerald-500/5" : ""} ${clickable ? "cursor-pointer hover:bg-primary/10" : ""}`}
+                          title={clickable ? "اضغط لإضافة موعد" : undefined}
+                        >
                           {cellAppts.map((a) => (
                             <div key={a.id} className={`rounded border px-1 py-0.5 mb-0.5 leading-tight ${statusBg(a.status)}`}>
                               <div className="font-semibold truncate">{a.case_name}</div>
@@ -243,7 +256,7 @@ export function WeeklyScheduleGrid({
                             </div>
                           ))}
                           {cellAppts.length === 0 && avail && (
-                            <div className="text-[10px] text-emerald-700 text-center">متاح</div>
+                            <div className="text-[10px] text-emerald-700 text-center">+ متاح</div>
                           )}
                         </td>
                       );
