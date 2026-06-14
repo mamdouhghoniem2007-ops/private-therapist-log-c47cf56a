@@ -951,6 +951,14 @@ export function Dashboard({ user }: { user: User }) {
 
   return (
     <div className="min-h-screen">
+      {!roleReady ? (
+        <main className="mx-auto max-w-6xl px-4 py-16">
+          <Card className="shadow-[var(--shadow-card)]">
+            <CardContent className="py-12 text-center text-muted-foreground">جارٍ تحميل صلاحيات الحساب...</CardContent>
+          </Card>
+        </main>
+      ) : (
+        <>
       <datalist id="case-names-list">
         {caseNames.map((n) => <option key={n} value={n} />)}
       </datalist>
@@ -1236,6 +1244,8 @@ export function Dashboard({ user }: { user: User }) {
           )
         )}
       </main>
+        </>
+      )}
     </div>
   );
 }
