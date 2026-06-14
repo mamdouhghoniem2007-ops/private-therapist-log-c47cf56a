@@ -867,6 +867,7 @@ export function CasesCard({
                         </SelectContent>
                       </Select>
                     </div>
+                    {canSeeFinancial && (
                     <div className="space-y-1.5">
                       <Label>سعر الجلسة</Label>
                       <Select
@@ -893,6 +894,7 @@ export function CasesCard({
                         />
                       )}
                     </div>
+                    )}
                     <div className="space-y-1.5">
                       <Label>نسبة الأخصائي %</Label>
                       <Input
