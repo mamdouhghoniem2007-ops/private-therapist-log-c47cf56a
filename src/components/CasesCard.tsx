@@ -99,6 +99,8 @@ export function CasesCard({
   profilesMap: Record<string, string>;
 }) {
   const canManage = role === "admin" || role === "supervisor";
+  const isSupervisor = role === "supervisor";
+  const canSeeFinancial = !isSupervisor;
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
