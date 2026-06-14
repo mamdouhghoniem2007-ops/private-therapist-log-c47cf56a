@@ -740,6 +740,17 @@ export function CasesCard({
                       <FileText className="h-4 w-4 ml-1" />
                       السجل
                     </Button>
+                    {c.active && (canManage || c.specialist_id === user.id) && (
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => openQuickLog(c)}
+                        title="تسجيل جلسة الآن لهذه الحالة"
+                      >
+                        <PlayCircle className="h-4 w-4 ml-1" />
+                        تسجيل جلسة
+                      </Button>
+                    )}
                     {role === "specialist" && c.specialist_id === user.id && c.active && (
                       <Button
                         size="sm"
