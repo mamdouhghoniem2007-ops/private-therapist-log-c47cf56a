@@ -478,9 +478,7 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
           <TabsContent value="appointments" className="space-y-3">
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">مواعيد {specialistName}</p>
-              <Button size="sm" onClick={() => openCreate("appointment")} disabled={!specialistId}>
-                <Plus className="h-4 w-4" /> إضافة موعد
-              </Button>
+              <p className="text-xs text-muted-foreground">إضافة المواعيد الجديدة تتم من ملف الحالة فقط</p>
             </div>
             <div className="rounded-md border overflow-x-auto">
               <Table>
