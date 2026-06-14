@@ -924,6 +924,7 @@ export function CasesCard({
                         </SelectContent>
                       </Select>
                     </div>
+                    {canSeeFinancial && (
                     <div className="space-y-1.5">
                       <Label>طريقة الدفع</Label>
                       <Select value={editDraft.payment_type || "per_session"} onValueChange={(v) => setEditDraft({ ...editDraft, payment_type: v })}>
@@ -933,6 +934,8 @@ export function CasesCard({
                         </SelectContent>
                       </Select>
                     </div>
+                    )}
+                    {canSeeFinancial && (
                     <div className="space-y-1.5">
                       <Label>نسبة الخصم %</Label>
                       <Input
@@ -942,6 +945,7 @@ export function CasesCard({
                         placeholder="مثال: 12.5"
                       />
                     </div>
+                    )}
 
 
                     <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
