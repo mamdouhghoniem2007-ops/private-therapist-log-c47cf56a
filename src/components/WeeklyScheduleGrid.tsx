@@ -65,9 +65,13 @@ const ymd = (d: Date) => {
 export function WeeklyScheduleGrid({
   specialists,
   profilesMap,
+  onEmptyCellClick,
+  refreshKey,
 }: {
   specialists: Profile[];
   profilesMap: Record<string, string>;
+  onEmptyCellClick?: (date: string, time: string, specialistId?: string) => void;
+  refreshKey?: number;
 }) {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfArabicWeek(new Date()));
   const [specialistFilter, setSpecialistFilter] = useState<string>("all");
