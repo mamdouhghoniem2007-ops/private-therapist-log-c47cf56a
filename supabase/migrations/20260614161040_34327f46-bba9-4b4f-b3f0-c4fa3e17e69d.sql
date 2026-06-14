@@ -1,0 +1,2 @@
+CREATE POLICY "Supervisors insert cases" ON public.cases FOR INSERT TO authenticated WITH CHECK (has_role(auth.uid(), 'supervisor'::app_role));
+CREATE POLICY "Supervisors update cases" ON public.cases FOR UPDATE TO authenticated USING (has_role(auth.uid(), 'supervisor'::app_role)) WITH CHECK (has_role(auth.uid(), 'supervisor'::app_role));

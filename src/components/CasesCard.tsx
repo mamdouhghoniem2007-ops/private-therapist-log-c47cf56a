@@ -99,6 +99,8 @@ export function CasesCard({
   profilesMap: Record<string, string>;
 }) {
   const canManage = role === "admin" || role === "supervisor";
+  const isSupervisor = role === "supervisor";
+  const canSeeFinancial = !isSupervisor;
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -473,9 +475,9 @@ export function CasesCard({
     e.preventDefault();
     if (!specialistId) return toast.error("اختر الأخصائي");
     if (days.length === 0) return toast.error("اختر أيام الأسبوع");
-    if (cost === "" || cost < 0) return toast.error("أدخل سعر الجلسة");
-    const disc = discountPct === "" ? 0 : Number(discountPct);
-    if (disc < 0 || disc > 100) return toast.error("نسبة الخصم بين 0 و 100");
+    if (canSeeFinancial && (cost === "" || cost < 0)) return toast.error("أدخل سعر الجلسة");
+    const disc = !canSeeFinancial ? 0 : (discountPct === "" ? 0 : Number(discountPct));
+    if (canSeeFinancial && (disc < 0 || disc > 100)) return toast.error("نسبة الخصم بين 0 و 100");
     setSubmitting(true);
     const { error } = await supabase.from("cases").insert({
       name: name.trim(),
@@ -484,11 +486,11 @@ export function CasesCard({
       recurring_days: days,
       recurring_time: time,
       default_duration_minutes: duration,
-      default_cost: Number(cost),
-      default_specialist_percentage: percentage,
+      default_cost: canSeeFinancial ? Number(cost) : 0,
+      default_specialist_percentage: canSeeFinancial ? percentage : 0,
       default_session_kind: sessionKind,
       default_session_subtype: sessionSubtype,
-      payment_type: paymentType,
+      payment_type: canSeeFinancial ? paymentType : "per_session",
       discount_percentage: disc,
       start_date: startDate,
       active: true,
@@ -614,6 +616,7 @@ export function CasesCard({
                 </SelectContent>
               </Select>
             </div>
+            {canSeeFinancial && (
             <div className="space-y-1.5">
               <Label>سعر الجلسة</Label>
               <Select
@@ -641,6 +644,8 @@ export function CasesCard({
                 />
               )}
             </div>
+            )}
+            {canSeeFinancial && (
             <div className="space-y-1.5">
               <Label>نسبة الأخصائي %</Label>
               <Input
@@ -650,6 +655,7 @@ export function CasesCard({
                 placeholder="مثال: 12.5"
               />
             </div>
+            )}
             <div className="space-y-1.5">
               <Label>نوع الجلسة</Label>
               <Select value={sessionKind} onValueChange={(v) => { setSessionKind(v); setSessionSubtype(defaultSubtypeFor(v)); }}>
@@ -668,6 +674,7 @@ export function CasesCard({
                 </SelectContent>
               </Select>
             </div>
+            {canSeeFinancial && (
             <div className="space-y-1.5">
               <Label>طريقة الدفع</Label>
               <Select value={paymentType} onValueChange={setPaymentType}>
@@ -677,6 +684,8 @@ export function CasesCard({
                 </SelectContent>
               </Select>
             </div>
+            )}
+            {canSeeFinancial && (
             <div className="space-y-1.5">
               <Label>نسبة الخصم %</Label>
               <Input
@@ -690,6 +699,7 @@ export function CasesCard({
                 placeholder="مثال: 12.5"
               />
             </div>
+            )}
 
 
             <div className="sm:col-span-2 lg:col-span-4">
@@ -722,10 +732,14 @@ export function CasesCard({
                       {c.recurring_days.map((d) => DAY_LABELS[d]).join("، ") || "—"}
                       <span dir="ltr"> · {fmtTime12(c.recurring_time)}</span>
                       {" · "}{c.default_duration_minutes} د
-                      {" · "}{Number(c.default_cost).toFixed(2)} ({c.default_specialist_percentage}%)
-                      {" · "}{PAYMENT_TYPE_LABEL[c.payment_type] || "بالجلسة"}
-                      {Number(c.discount_percentage) > 0 && (
-                        <span className="text-amber-700"> · خصم {Number(c.discount_percentage)}%</span>
+                      {canSeeFinancial && (
+                        <>
+                          {" · "}{Number(c.default_cost).toFixed(2)} ({c.default_specialist_percentage}%)
+                          {" · "}{PAYMENT_TYPE_LABEL[c.payment_type] || "بالجلسة"}
+                          {Number(c.discount_percentage) > 0 && (
+                            <span className="text-amber-700"> · خصم {Number(c.discount_percentage)}%</span>
+                          )}
+                        </>
                       )}
                       {c.whatsapp && <span dir="ltr"> · {c.whatsapp}</span>}
                     </p>
@@ -740,7 +754,7 @@ export function CasesCard({
                       <FileText className="h-4 w-4 ml-1" />
                       السجل
                     </Button>
-                    {c.active && (canManage || c.specialist_id === user.id) && (
+                    {c.active && !isSupervisor && (role === "admin" || c.specialist_id === user.id) && (
                       <Button
                         size="sm"
                         className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -853,6 +867,7 @@ export function CasesCard({
                         </SelectContent>
                       </Select>
                     </div>
+                    {canSeeFinancial && (
                     <div className="space-y-1.5">
                       <Label>سعر الجلسة</Label>
                       <Select
@@ -879,6 +894,8 @@ export function CasesCard({
                         />
                       )}
                     </div>
+                    )}
+                    {canSeeFinancial && (
                     <div className="space-y-1.5">
                       <Label>نسبة الأخصائي %</Label>
                       <Input
@@ -888,6 +905,7 @@ export function CasesCard({
                         placeholder="مثال: 12.5"
                       />
                     </div>
+                    )}
                     <div className="space-y-1.5">
                       <Label>نوع الجلسة</Label>
                       <Select value={editDraft.default_session_kind || "regular"} onValueChange={(v) => setEditDraft({ ...editDraft, default_session_kind: v, default_session_subtype: defaultSubtypeFor(v) })}>
@@ -906,6 +924,7 @@ export function CasesCard({
                         </SelectContent>
                       </Select>
                     </div>
+                    {canSeeFinancial && (
                     <div className="space-y-1.5">
                       <Label>طريقة الدفع</Label>
                       <Select value={editDraft.payment_type || "per_session"} onValueChange={(v) => setEditDraft({ ...editDraft, payment_type: v })}>
@@ -915,6 +934,8 @@ export function CasesCard({
                         </SelectContent>
                       </Select>
                     </div>
+                    )}
+                    {canSeeFinancial && (
                     <div className="space-y-1.5">
                       <Label>نسبة الخصم %</Label>
                       <Input
@@ -924,6 +945,7 @@ export function CasesCard({
                         placeholder="مثال: 12.5"
                       />
                     </div>
+                    )}
 
 
                     <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
