@@ -23,7 +23,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, UserCog } from "lucide-react";
+import { Plus, Pencil, Trash2, UserCog, Download, Printer } from "lucide-react";
+import { AvailabilityEditor } from "@/components/AvailabilityEditor";
+import { fmtTime12 } from "@/lib/utils";
 
 type Profile = { id: string; full_name: string };
 
