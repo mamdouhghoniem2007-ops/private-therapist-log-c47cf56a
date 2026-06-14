@@ -166,6 +166,37 @@ export function Dashboard({ user }: { user: User }) {
   const [aSessionKind, setASessionKind] = useState<SessionKind>("regular");
   const [aSubmitting, setASubmitting] = useState(false);
 
+  // Quick appointment dialog (admin/supervisor: add new / edit existing)
+  const [dlgOpen, setDlgOpen] = useState(false);
+  const [dlgEditing, setDlgEditing] = useState<AppointmentLite | null>(null);
+  const [dlgPreset, setDlgPreset] = useState<{ date?: string; time?: string; specialistId?: string } | undefined>(undefined);
+  const [dlgAttended, setDlgAttended] = useState(false);
+  const [gridRefreshKey, setGridRefreshKey] = useState(0);
+
+  const openAddDialog = (opts?: { preset?: typeof dlgPreset; attended?: boolean }) => {
+    setDlgEditing(null);
+    setDlgPreset(opts?.preset);
+    setDlgAttended(!!opts?.attended);
+    setDlgOpen(true);
+  };
+  const openEditDialog = (a: Appointment) => {
+    setDlgEditing({
+      id: a.id, specialist_id: a.specialist_id, case_id: a.case_id, case_name: a.case_name,
+      scheduled_date: a.scheduled_date, scheduled_time: a.scheduled_time,
+      duration_minutes: a.duration_minutes, cost: a.cost,
+      specialist_percentage: Number(a.specialist_percentage),
+      discount_percentage: Number(a.discount_percentage),
+      payment_type: a.payment_type, status: a.status, notes: a.notes, case_whatsapp: a.case_whatsapp,
+    });
+    setDlgPreset(undefined);
+    setDlgAttended(false);
+    setDlgOpen(true);
+  };
+  const onDialogSaved = () => {
+    loadAll();
+    setGridRefreshKey((k) => k + 1);
+  };
+
 
   const isAdmin = role === "admin";
   const isSupervisor = role === "supervisor";
