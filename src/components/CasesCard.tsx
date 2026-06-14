@@ -475,9 +475,9 @@ export function CasesCard({
     e.preventDefault();
     if (!specialistId) return toast.error("اختر الأخصائي");
     if (days.length === 0) return toast.error("اختر أيام الأسبوع");
-    if (cost === "" || cost < 0) return toast.error("أدخل سعر الجلسة");
-    const disc = discountPct === "" ? 0 : Number(discountPct);
-    if (disc < 0 || disc > 100) return toast.error("نسبة الخصم بين 0 و 100");
+    if (canSeeFinancial && (cost === "" || cost < 0)) return toast.error("أدخل سعر الجلسة");
+    const disc = !canSeeFinancial ? 0 : (discountPct === "" ? 0 : Number(discountPct));
+    if (canSeeFinancial && (disc < 0 || disc > 100)) return toast.error("نسبة الخصم بين 0 و 100");
     setSubmitting(true);
     const { error } = await supabase.from("cases").insert({
       name: name.trim(),
