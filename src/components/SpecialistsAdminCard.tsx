@@ -23,7 +23,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, UserCog } from "lucide-react";
+import { Plus, Pencil, Trash2, UserCog, Download, Printer } from "lucide-react";
+import { AvailabilityEditor } from "@/components/AvailabilityEditor";
+import { fmtTime12 } from "@/lib/utils";
 
 type Profile = { id: string; full_name: string };
 
@@ -82,11 +84,19 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }) {
   const [specialistId, setSpecialistId] = useState<string>("");
-  const [tab, setTab] = useState<"sessions" | "appointments" | "cases">("sessions");
+  const [tab, setTab] = useState<"sessions" | "appointments" | "cases" | "availability">("sessions");
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [appointments, setAppointments] = useState<AppointmentRow[]>([]);
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Date-range filter for sessions log
+  const monthStart = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  };
+  const [fromDate, setFromDate] = useState<string>(monthStart());
+  const [toDate, setToDate] = useState<string>(today());
 
   // edit dialog state
   const [editKind, setEditKind] = useState<null | "session" | "appointment" | "case">(null);
@@ -281,58 +291,194 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
             <TabsTrigger value="sessions">الجلسات ({sessions.length})</TabsTrigger>
             <TabsTrigger value="appointments">المواعيد ({appointments.length})</TabsTrigger>
             <TabsTrigger value="cases">الحالات ({cases.length})</TabsTrigger>
+            <TabsTrigger value="availability">التوافر</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sessions" className="space-y-3">
-            <div className="flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">الجلسات المسجلة لـ {specialistName}</p>
-              <Button size="sm" onClick={() => openCreate("session")} disabled={!specialistId}>
-                <Plus className="h-4 w-4" /> إضافة جلسة
-              </Button>
-            </div>
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>الوقت</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>المدة</TableHead>
-                    <TableHead>التكلفة</TableHead>
-                    <TableHead>%</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">جارٍ التحميل...</TableCell></TableRow>
-                  ) : sessions.length === 0 ? (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">لا توجد بيانات</TableCell></TableRow>
-                  ) : sessions.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell>{r.session_date}</TableCell>
-                      <TableCell>{r.session_time.slice(0,5)}</TableCell>
-                      <TableCell>{r.case_name}</TableCell>
-                      <TableCell>{r.duration_minutes}د</TableCell>
-                      <TableCell>{r.cost}</TableCell>
-                      <TableCell>{r.specialist_percentage}%</TableCell>
-                      <TableCell className="flex gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit("session", r)}><Pencil className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => removeSession(r.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            {(() => {
+              const filtered = sessions.filter((s) => s.session_date >= fromDate && s.session_date <= toDate);
+              const totalGross = filtered.reduce((sum, s) => sum + Number(s.cost), 0);
+              const totalNet = filtered.reduce((sum, s) => {
+                const d = Math.max(0, Math.min(100, Number(s.discount_percentage) || 0));
+                return sum + Number(s.cost) * (1 - d / 100);
+              }, 0);
+              const totalShare = filtered.reduce((sum, s) => {
+                const d = Math.max(0, Math.min(100, Number(s.discount_percentage) || 0));
+                const net = Number(s.cost) * (1 - d / 100);
+                return sum + (net * Number(s.specialist_percentage)) / 100;
+              }, 0);
+              const totalCenter = totalNet - totalShare;
+
+              const esc = (v: any) => {
+                const t = v == null ? "" : String(v);
+                return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+              };
+              const headers = ["التاريخ", "الوقت", "الحالة", "المدة", "السعر", "خصم%", "بعد الخصم", "نسبة الأخصائي%", "نصيب الأخصائي", "نصيب المركز", "طريقة الدفع", "ملاحظات"];
+              const rowsCsv = filtered.map((s) => {
+                const d = Math.max(0, Math.min(100, Number(s.discount_percentage) || 0));
+                const net = Number(s.cost) * (1 - d / 100);
+                const share = (net * Number(s.specialist_percentage)) / 100;
+                return [
+                  s.session_date, fmtTime12(s.session_time), s.case_name, s.duration_minutes,
+                  Number(s.cost).toFixed(2), d + "%", net.toFixed(2),
+                  s.specialist_percentage, share.toFixed(2), (net - share).toFixed(2),
+                  s.payment_type === "monthly" ? "بالشهر" : "بالجلسة",
+                  (s.notes || "").replace(/\n/g, " "),
+                ].map(esc).join(",");
+              });
+              const totalRow = ["", "", "الإجمالي", filtered.length, totalGross.toFixed(2), "", totalNet.toFixed(2), "", totalShare.toFixed(2), totalCenter.toFixed(2), "", ""].map(esc).join(",");
+
+              const downloadCsv = () => {
+                const csv = "\uFEFF" + [headers.map(esc).join(","), ...rowsCsv, totalRow].join("\n");
+                const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `جلسات-${specialistName}-${fromDate}_إلى_${toDate}.csv`;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                toast.success("تم التنزيل");
+              };
+
+              const printSheet = () => {
+                const bodyHtml = filtered.map((s) => {
+                  const d = Math.max(0, Math.min(100, Number(s.discount_percentage) || 0));
+                  const net = Number(s.cost) * (1 - d / 100);
+                  const share = (net * Number(s.specialist_percentage)) / 100;
+                  return `<tr>
+                    <td>${s.session_date}</td>
+                    <td>${fmtTime12(s.session_time)}</td>
+                    <td>${s.case_name}</td>
+                    <td>${s.duration_minutes}د</td>
+                    <td>${Number(s.cost).toFixed(2)}</td>
+                    <td>${d}%</td>
+                    <td>${net.toFixed(2)}</td>
+                    <td>${s.specialist_percentage}%</td>
+                    <td>${share.toFixed(2)}</td>
+                    <td>${(net - share).toFixed(2)}</td>
+                  </tr>`;
+                }).join("");
+                const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+                  <title>سجل ${specialistName}</title>
+                  <style>
+                    body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:18px;color:#111}
+                    h1{margin:0 0 4px;font-size:18px}
+                    .meta{color:#555;font-size:12px;margin-bottom:12px}
+                    table{width:100%;border-collapse:collapse;font-size:12px}
+                    th,td{border:1px solid #999;padding:5px 7px;text-align:center}
+                    thead{background:#f0f0f0}
+                    tfoot td{font-weight:bold;background:#fafafa}
+                    .toolbar{margin:0 0 12px} .toolbar button{padding:6px 12px;cursor:pointer}
+                    @media print{.noprint{display:none}}
+                  </style></head><body>
+                  <h1>سجل جلسات: ${specialistName}</h1>
+                  <div class="meta">من ${fromDate} إلى ${toDate} · ${filtered.length} جلسة</div>
+                  <div class="toolbar noprint"><button onclick="window.print()">طباعة</button></div>
+                  <table>
+                    <thead><tr>${["التاريخ","الوقت","الحالة","المدة","السعر","خصم","بعد الخصم","نسبة","نصيب الأخصائي","نصيب المركز"].map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+                    <tbody>${bodyHtml || `<tr><td colspan="10">لا توجد بيانات</td></tr>`}</tbody>
+                    <tfoot><tr>
+                      <td colspan="6">الإجمالي (${filtered.length} جلسة)</td>
+                      <td>${totalNet.toFixed(2)}</td>
+                      <td>—</td>
+                      <td>${totalShare.toFixed(2)}</td>
+                      <td>${totalCenter.toFixed(2)}</td>
+                    </tr></tfoot>
+                  </table></body></html>`;
+                const w = window.open("", "_blank");
+                if (!w) return toast.error("فعّل النوافذ المنبثقة");
+                w.document.write(html); w.document.close();
+              };
+
+              return (
+                <>
+                  <div className="flex items-end gap-2 flex-wrap">
+                    <div className="space-y-1">
+                      <Label className="text-xs">من تاريخ</Label>
+                      <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="h-8 w-40" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">إلى تاريخ</Label>
+                      <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="h-8 w-40" />
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => { setFromDate(monthStart()); setToDate(today()); }}>هذا الشهر</Button>
+                    <Button size="sm" variant="outline" onClick={() => { const t = today(); setFromDate(t); setToDate(t); }}>اليوم</Button>
+                    <div className="flex-1" />
+                    <Button size="sm" variant="outline" onClick={downloadCsv} disabled={filtered.length === 0}>
+                      <Download className="h-4 w-4 ml-1" /> تنزيل CSV
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={printSheet} disabled={filtered.length === 0}>
+                      <Printer className="h-4 w-4 ml-1" /> طباعة
+                    </Button>
+                    <Button size="sm" onClick={() => openCreate("session")} disabled={!specialistId}>
+                      <Plus className="h-4 w-4" /> إضافة جلسة
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="rounded-md border bg-muted/30 p-2">
+                      <div className="text-muted-foreground">عدد الجلسات</div>
+                      <div className="font-bold text-base">{filtered.length}</div>
+                    </div>
+                    <div className="rounded-md border bg-muted/30 p-2">
+                      <div className="text-muted-foreground">الإجمالي (بعد الخصم)</div>
+                      <div className="font-bold text-base">{totalNet.toFixed(2)}</div>
+                    </div>
+                    <div className="rounded-md border bg-primary/10 p-2">
+                      <div className="text-muted-foreground">نصيب الأخصائي</div>
+                      <div className="font-bold text-base text-primary">{totalShare.toFixed(2)}</div>
+                    </div>
+                    <div className="rounded-md border bg-muted/30 p-2">
+                      <div className="text-muted-foreground">نصيب المركز</div>
+                      <div className="font-bold text-base">{totalCenter.toFixed(2)}</div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>التاريخ</TableHead>
+                          <TableHead>الوقت</TableHead>
+                          <TableHead>الحالة</TableHead>
+                          <TableHead>المدة</TableHead>
+                          <TableHead>التكلفة</TableHead>
+                          <TableHead>%</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">جارٍ التحميل...</TableCell></TableRow>
+                        ) : filtered.length === 0 ? (
+                          <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">لا توجد جلسات في النطاق المحدد</TableCell></TableRow>
+                        ) : filtered.map((r) => (
+                          <TableRow key={r.id}>
+                            <TableCell>{r.session_date}</TableCell>
+                            <TableCell>{r.session_time.slice(0,5)}</TableCell>
+                            <TableCell>{r.case_name}</TableCell>
+                            <TableCell>{r.duration_minutes}د</TableCell>
+                            <TableCell>{r.cost}</TableCell>
+                            <TableCell>{r.specialist_percentage}%</TableCell>
+                            <TableCell className="flex gap-1">
+                              <Button size="icon" variant="ghost" onClick={() => openEdit("session", r)}><Pencil className="h-4 w-4" /></Button>
+                              <Button size="icon" variant="ghost" onClick={() => removeSession(r.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
+              );
+            })()}
           </TabsContent>
+
 
           <TabsContent value="appointments" className="space-y-3">
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">مواعيد {specialistName}</p>
-              <Button size="sm" onClick={() => openCreate("appointment")} disabled={!specialistId}>
-                <Plus className="h-4 w-4" /> إضافة موعد
-              </Button>
+              <p className="text-xs text-muted-foreground">إضافة المواعيد الجديدة تتم من ملف الحالة فقط</p>
             </div>
             <div className="rounded-md border overflow-x-auto">
               <Table>
@@ -413,6 +559,11 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
                 </TableBody>
               </Table>
             </div>
+          </TabsContent>
+
+          <TabsContent value="availability" className="space-y-3">
+            <p className="text-sm text-muted-foreground">ساعات عمل {specialistName} الأسبوعية</p>
+            <AvailabilityEditor specialistId={specialistId} />
           </TabsContent>
         </Tabs>
       </CardContent>

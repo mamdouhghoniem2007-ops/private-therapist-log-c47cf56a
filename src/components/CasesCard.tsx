@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText } from "lucide-react";
+import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText, PlayCircle } from "lucide-react";
 import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 import { fmtTime12 } from "@/lib/utils";
 
@@ -333,6 +335,113 @@ export function CasesCard({
 
   const [submitting, setSubmitting] = useState(false);
 
+  // Quick-log session dialog
+  const [logCase, setLogCase] = useState<CaseRow | null>(null);
+  const [logNotes, setLogNotes] = useState("");
+  const [logSubmitting, setLogSubmitting] = useState(false);
+
+  const openQuickLog = (c: CaseRow) => {
+    setLogCase(c);
+    setLogNotes("");
+  };
+  const closeQuickLog = () => {
+    setLogCase(null);
+    setLogNotes("");
+  };
+  const submitQuickLog = async () => {
+    if (!logCase) return;
+    setLogSubmitting(true);
+    const todayStr = today();
+    const nowTime = new Date().toTimeString().slice(0, 5);
+    const notes = logNotes.trim() || null;
+
+    // Check if there's already an appointment for this case today → merge
+    const { data: existingAppt } = await supabase
+      .from("appointments")
+      .select("id, notes, status")
+      .eq("case_id", logCase.id)
+      .eq("scheduled_date", todayStr)
+      .order("scheduled_time", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const nowIso = new Date().toISOString();
+
+    if (existingAppt) {
+      const merged = notes
+        ? ((existingAppt as any).notes ? `${(existingAppt as any).notes}\n${notes}` : notes)
+        : (existingAppt as any).notes;
+      await supabase.from("appointments")
+        .update({ notes: merged, status: "attended", started_at: nowIso, ended_at: nowIso })
+        .eq("id", (existingAppt as any).id);
+      // Ensure session row exists / update notes
+      const { data: existSess } = await supabase
+        .from("sessions").select("id")
+        .eq("specialist_id", logCase.specialist_id)
+        .eq("case_name", logCase.name)
+        .eq("session_date", todayStr)
+        .maybeSingle();
+      if (existSess) {
+        await supabase.from("sessions").update({ notes: merged }).eq("id", (existSess as any).id);
+      } else {
+        await supabase.from("sessions").insert({
+          specialist_id: logCase.specialist_id,
+          case_name: logCase.name,
+          session_date: todayStr,
+          session_time: nowTime,
+          duration_minutes: logCase.default_duration_minutes,
+          cost: Number(logCase.default_cost) || 0,
+          specialist_percentage: Number(logCase.default_specialist_percentage) || 50,
+          discount_percentage: Number(logCase.discount_percentage) || 0,
+          payment_type: logCase.payment_type || "per_session",
+          session_type: null,
+          test_type: null,
+          notes: merged,
+        });
+      }
+    } else {
+      const { error } = await supabase.from("appointments").insert({
+        specialist_id: logCase.specialist_id,
+        case_name: logCase.name,
+        case_id: logCase.id,
+        scheduled_date: todayStr,
+        scheduled_time: nowTime,
+        duration_minutes: logCase.default_duration_minutes,
+        cost: Number(logCase.default_cost) || 0,
+        specialist_percentage: Number(logCase.default_specialist_percentage) || 50,
+        discount_percentage: Number(logCase.discount_percentage) || 0,
+        payment_type: logCase.payment_type || "per_session",
+        session_kind: "regular",
+        session_type: null,
+        test_type: null,
+        status: "attended",
+        started_at: nowIso,
+        ended_at: nowIso,
+        notes,
+        created_by: user.id,
+      });
+      if (error) { setLogSubmitting(false); return toast.error(error.message); }
+      await supabase.from("sessions").insert({
+        specialist_id: logCase.specialist_id,
+        case_name: logCase.name,
+        session_date: todayStr,
+        session_time: nowTime,
+        duration_minutes: logCase.default_duration_minutes,
+        cost: Number(logCase.default_cost) || 0,
+        specialist_percentage: Number(logCase.default_specialist_percentage) || 50,
+        discount_percentage: Number(logCase.discount_percentage) || 0,
+        payment_type: logCase.payment_type || "per_session",
+        session_type: null,
+        test_type: null,
+        notes,
+      });
+    }
+    setLogSubmitting(false);
+    toast.success(`تم تسجيل جلسة الحالة "${logCase.name}" ✅`);
+    closeQuickLog();
+  };
+
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -631,6 +740,17 @@ export function CasesCard({
                       <FileText className="h-4 w-4 ml-1" />
                       السجل
                     </Button>
+                    {c.active && (canManage || c.specialist_id === user.id) && (
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => openQuickLog(c)}
+                        title="تسجيل جلسة الآن لهذه الحالة"
+                      >
+                        <PlayCircle className="h-4 w-4 ml-1" />
+                        تسجيل جلسة
+                      </Button>
+                    )}
                     {role === "specialist" && c.specialist_id === user.id && c.active && (
                       <Button
                         size="sm"
@@ -871,6 +991,38 @@ export function CasesCard({
           </div>
         )}
       </CardContent>
+
+      <Dialog open={!!logCase} onOpenChange={(o) => !o && closeQuickLog()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تسجيل جلسة — {logCase?.name}</DialogTitle>
+          </DialogHeader>
+          {logCase && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                سيتم تسجيل جلسة بتاريخ اليوم وقت الآن، بسعر {Number(logCase.default_cost).toFixed(2)} ومدة {logCase.default_duration_minutes} دقيقة، للأخصائي{" "}
+                <b>{profilesMap[logCase.specialist_id] || "—"}</b>.
+              </p>
+              <div className="space-y-1.5">
+                <Label>ما تم خلال الجلسة (اختياري)</Label>
+                <Textarea
+                  value={logNotes}
+                  onChange={(e) => setLogNotes(e.target.value)}
+                  rows={4}
+                  placeholder="ملاحظات الجلسة، الأنشطة، التقدم..."
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeQuickLog} disabled={logSubmitting}>إلغاء</Button>
+            <Button onClick={submitQuickLog} disabled={logSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {logSubmitting ? "جارٍ الحفظ..." : "حفظ الجلسة"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
+

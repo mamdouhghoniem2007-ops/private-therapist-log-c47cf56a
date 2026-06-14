@@ -257,6 +257,33 @@ export type Database = {
         }
         Relationships: []
       }
+      specialist_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          specialist_id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          specialist_id: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          specialist_id?: string
+          start_time?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
