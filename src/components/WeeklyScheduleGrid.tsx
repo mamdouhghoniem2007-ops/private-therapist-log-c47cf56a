@@ -102,7 +102,7 @@ export function WeeklyScheduleGrid({
       if (!avRes.error) setAvailability((avRes.data as Availability[]) || []);
       setLoading(false);
     })();
-  }, [weekStartStr, weekEndStr]);
+  }, [weekStartStr, weekEndStr, refreshKey]);
 
   const filtered = specialistFilter === "all"
     ? appts
