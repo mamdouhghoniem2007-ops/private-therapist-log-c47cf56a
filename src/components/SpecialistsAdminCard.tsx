@@ -291,6 +291,7 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
             <TabsTrigger value="sessions">الجلسات ({sessions.length})</TabsTrigger>
             <TabsTrigger value="appointments">المواعيد ({appointments.length})</TabsTrigger>
             <TabsTrigger value="cases">الحالات ({cases.length})</TabsTrigger>
+            <TabsTrigger value="availability">التوافر</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sessions" className="space-y-3">
