@@ -205,13 +205,35 @@ export function Dashboard({ user }: { user: User }) {
 
   useEffect(() => {
     (async () => {
-      const [{ data: prof }, { data: roles }] = await Promise.all([
+      setRoleReady(false);
+      const [{ data: prof, error: profError }, { data: roles, error: rolesError }] = await Promise.all([
         supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", user.id),
       ]);
-      setProfileName(prof?.full_name || user.email || "");
+
+      if (profError) toast.error(profError.message);
+
+      let resolved: Role = "specialist";
       const list = (roles || []).map((r: any) => r.role as Role);
-      const resolved: Role = list.includes("admin") ? "admin" : list.includes("supervisor") ? "supervisor" : "specialist";
+      if (list.includes("admin")) {
+        resolved = "admin";
+      } else if (list.includes("supervisor")) {
+        resolved = "supervisor";
+      } else if (rolesError || list.length === 0) {
+        const [{ data: isAdminRole, error: adminRoleError }, { data: isSupervisorRole, error: supervisorRoleError }] = await Promise.all([
+          supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }),
+          supabase.rpc("has_role", { _user_id: user.id, _role: "supervisor" }),
+        ]);
+
+        if (adminRoleError || supervisorRoleError) {
+          toast.error((adminRoleError || supervisorRoleError)?.message || "تعذر تحميل صلاحيات الحساب");
+        }
+
+        if (isAdminRole) resolved = "admin";
+        else if (isSupervisorRole) resolved = "supervisor";
+      }
+
+      setProfileName(prof?.full_name || user.email || "");
       setRole(resolved);
       setRoleReady(true);
     })();
