@@ -616,6 +616,7 @@ export function CasesCard({
                 </SelectContent>
               </Select>
             </div>
+            {canSeeFinancial && (
             <div className="space-y-1.5">
               <Label>سعر الجلسة</Label>
               <Select
@@ -643,6 +644,8 @@ export function CasesCard({
                 />
               )}
             </div>
+            )}
+            {canSeeFinancial && (
             <div className="space-y-1.5">
               <Label>نسبة الأخصائي %</Label>
               <Input
@@ -652,6 +655,7 @@ export function CasesCard({
                 placeholder="مثال: 12.5"
               />
             </div>
+            )}
             <div className="space-y-1.5">
               <Label>نوع الجلسة</Label>
               <Select value={sessionKind} onValueChange={(v) => { setSessionKind(v); setSessionSubtype(defaultSubtypeFor(v)); }}>
@@ -670,6 +674,7 @@ export function CasesCard({
                 </SelectContent>
               </Select>
             </div>
+            {canSeeFinancial && (
             <div className="space-y-1.5">
               <Label>طريقة الدفع</Label>
               <Select value={paymentType} onValueChange={setPaymentType}>
@@ -679,6 +684,8 @@ export function CasesCard({
                 </SelectContent>
               </Select>
             </div>
+            )}
+            {canSeeFinancial && (
             <div className="space-y-1.5">
               <Label>نسبة الخصم %</Label>
               <Input
@@ -692,6 +699,7 @@ export function CasesCard({
                 placeholder="مثال: 12.5"
               />
             </div>
+            )}
 
 
             <div className="sm:col-span-2 lg:col-span-4">
