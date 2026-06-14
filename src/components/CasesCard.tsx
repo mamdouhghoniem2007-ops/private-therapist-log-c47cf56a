@@ -732,10 +732,14 @@ export function CasesCard({
                       {c.recurring_days.map((d) => DAY_LABELS[d]).join("، ") || "—"}
                       <span dir="ltr"> · {fmtTime12(c.recurring_time)}</span>
                       {" · "}{c.default_duration_minutes} د
-                      {" · "}{Number(c.default_cost).toFixed(2)} ({c.default_specialist_percentage}%)
-                      {" · "}{PAYMENT_TYPE_LABEL[c.payment_type] || "بالجلسة"}
-                      {Number(c.discount_percentage) > 0 && (
-                        <span className="text-amber-700"> · خصم {Number(c.discount_percentage)}%</span>
+                      {canSeeFinancial && (
+                        <>
+                          {" · "}{Number(c.default_cost).toFixed(2)} ({c.default_specialist_percentage}%)
+                          {" · "}{PAYMENT_TYPE_LABEL[c.payment_type] || "بالجلسة"}
+                          {Number(c.discount_percentage) > 0 && (
+                            <span className="text-amber-700"> · خصم {Number(c.discount_percentage)}%</span>
+                          )}
+                        </>
                       )}
                       {c.whatsapp && <span dir="ltr"> · {c.whatsapp}</span>}
                     </p>
