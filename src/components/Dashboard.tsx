@@ -18,6 +18,7 @@ import { CasesCard } from "@/components/CasesCard";
 import { EmployeesCard } from "@/components/EmployeesCard";
 import { SpecialistsAdminCard } from "@/components/SpecialistsAdminCard";
 import { WeeklyScheduleGrid } from "@/components/WeeklyScheduleGrid";
+import { QuickAppointmentDialog, type AppointmentLite } from "@/components/QuickAppointmentDialog";
 
 type SessionKind = "regular" | "initial_assessment" | "test" | "periodic_assessment";
 const SESSION_KIND_LABEL: Record<SessionKind, string> = {
