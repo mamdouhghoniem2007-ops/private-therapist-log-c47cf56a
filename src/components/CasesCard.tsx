@@ -1073,6 +1073,22 @@ export function CasesCard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SlotSuggestionsDialog
+        open={suggestOpen}
+        onOpenChange={setSuggestOpen}
+        specialists={specialists}
+        initialSpecialistId={specialistId}
+        initialDays={days}
+        durationMinutes={duration}
+        onPick={(s: Suggestion) => {
+          setSpecialistId(s.specialistId);
+          setDays([s.dayOfWeek]);
+          setTime(s.time);
+          setShowForm(true);
+          toast.success(`تم تعبئة النموذج بـ ${s.specialistName} — ${DAY_LABELS[s.dayOfWeek]} ${s.time}`);
+        }}
+      />
     </Card>
   );
 }
