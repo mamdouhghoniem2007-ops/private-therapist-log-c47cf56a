@@ -588,7 +588,19 @@ export function CasesCard({
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
-              <Label>أيام الأسبوع المتكررة</Label>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Label>أيام الأسبوع المتكررة</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSuggestOpen(true)}
+                  className="border-primary/40 text-primary hover:bg-primary/10"
+                >
+                  <Sparkles className="h-4 w-4 ml-1" />
+                  اقتراح مواعيد فاضية
+                </Button>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {DAY_LABELS.map((label, idx) => {
                   const selected = days.includes(idx);
