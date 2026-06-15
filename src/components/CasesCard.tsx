@@ -726,7 +726,7 @@ export function CasesCard({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`font-semibold ${!c.active ? "text-muted-foreground line-through" : ""}`}>{c.name}</span>
-                      {!c.active && <span className="text-xs rounded bg-muted px-2 py-0.5">موقوفة</span>}
+                      {!c.active && <span className="text-xs rounded bg-destructive/10 text-destructive border border-destructive/30 px-2 py-0.5 font-medium">موقوفة — لا يتم توليد مواعيد</span>}
                       <span className="text-xs text-muted-foreground">— {profilesMap[c.specialist_id] || "—"}</span>
                       <span className="text-[10px] rounded bg-primary/10 text-primary px-1.5 py-0.5">
                         {KIND_OPTIONS.find((k) => k.value === (c.default_session_kind || "regular"))?.label}
