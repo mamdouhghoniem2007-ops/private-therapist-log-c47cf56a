@@ -804,12 +804,23 @@ export function CasesCard({
                     })()}
                     {canManage && (
                       <>
-                        <Button size="sm" variant="outline" onClick={() => regenerate(c)} title="توليد مواعيد 8 أسابيع قادمة">
-                          <RefreshCw className="h-4 w-4 ml-1" />
-                          توليد
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => toggleActive(c)}>
-                          {c.active ? "إيقاف" : "تفعيل"}
+                        {c.active && (
+                          <Button size="sm" variant="outline" onClick={() => regenerate(c)} title="توليد مواعيد 8 أسابيع قادمة">
+                            <RefreshCw className="h-4 w-4 ml-1" />
+                            توليد
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleActive(c)}
+                          className={c.active
+                            ? "border-destructive/40 text-destructive hover:bg-destructive/10"
+                            : "border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10"}
+                          title={c.active ? "إيقاف الحالة وإلغاء توليد المواعيد" : "تفعيل الحالة وتوليد المواعيد"}
+                        >
+                          {c.active ? <Pause className="h-4 w-4 ml-1" /> : <Play className="h-4 w-4 ml-1" />}
+                          {c.active ? "إيقاف التوليد" : "تفعيل وتوليد"}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => editingId === c.id ? cancelEdit() : startEdit(c)}>
                           {editingId === c.id ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
