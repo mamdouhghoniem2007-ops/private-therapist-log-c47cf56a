@@ -505,10 +505,14 @@ export function CasesCard({
   };
 
   const toggleActive = async (c: CaseRow) => {
+    if (c.active) {
+      const ok = window.confirm(`سيتم إيقاف الحالة "${c.name}" وحذف كل المواعيد المستقبلية غير المبدوءة لها، ولن يتم توليد مواعيد جديدة. هل أنت متأكد؟`);
+      if (!ok) return;
+    }
     const { error } = await supabase.from("cases").update({ active: !c.active }).eq("id", c.id);
     if (error) return toast.error(error.message);
     setCases((cs) => cs.map((x) => x.id === c.id ? { ...x, active: !c.active } : x));
-    toast.success(!c.active ? "تم تفعيل الحالة" : "تم إيقاف الحالة");
+    toast.success(!c.active ? "تم تفعيل الحالة وتوليد المواعيد" : "تم إيقاف الحالة وإلغاء توليد المواعيد");
   };
 
   const regenerate = async (c: CaseRow) => {
