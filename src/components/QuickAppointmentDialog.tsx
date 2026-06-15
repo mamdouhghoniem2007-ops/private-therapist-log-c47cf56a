@@ -226,9 +226,10 @@ export function QuickAppointmentDialog({
 
           <div className="space-y-1.5">
             <Label>الحالة {loading && <span className="text-xs text-muted-foreground">(جارٍ التحميل...)</span>}</Label>
-            <Select value={caseId} onValueChange={pickCase}>
-              <SelectTrigger><SelectValue placeholder="اختر الحالة" /></SelectTrigger>
+            <Select value={caseId || "__new__"} onValueChange={(v) => { if (v === "__new__") { setCaseId(""); } else { pickCase(v); } }}>
+              <SelectTrigger><SelectValue placeholder="اختر الحالة أو اسم جديد" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="__new__">➕ اسم جديد (غير مسجّل)</SelectItem>
                 {filteredCases.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
@@ -237,6 +238,13 @@ export function QuickAppointmentDialog({
                 )}
               </SelectContent>
             </Select>
+            {!caseId && (
+              <Input
+                placeholder="اكتب اسم الحالة الجديدة"
+                value={caseName}
+                onChange={(e) => setCaseName(e.target.value)}
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
