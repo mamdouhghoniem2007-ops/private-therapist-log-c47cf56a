@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText, PlayCircle, Pause, Play } from "lucide-react";
+import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText, PlayCircle, Pause, Play, Sparkles } from "lucide-react";
 import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 import { fmtTime12 } from "@/lib/utils";
+import { SlotSuggestionsDialog, type Suggestion } from "./SlotSuggestionsDialog";
 
 type CaseAppt = {
   id: string;
@@ -104,6 +105,7 @@ export function CasesCard({
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [appts, setAppts] = useState<Record<string, CaseAppt[]>>({});
@@ -586,7 +588,19 @@ export function CasesCard({
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
-              <Label>أيام الأسبوع المتكررة</Label>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Label>أيام الأسبوع المتكررة</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSuggestOpen(true)}
+                  className="border-primary/40 text-primary hover:bg-primary/10"
+                >
+                  <Sparkles className="h-4 w-4 ml-1" />
+                  اقتراح مواعيد فاضية
+                </Button>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {DAY_LABELS.map((label, idx) => {
                   const selected = days.includes(idx);
@@ -1059,6 +1073,22 @@ export function CasesCard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SlotSuggestionsDialog
+        open={suggestOpen}
+        onOpenChange={setSuggestOpen}
+        specialists={specialists}
+        initialSpecialistId={specialistId}
+        initialDays={days}
+        durationMinutes={duration}
+        onPick={(s: Suggestion) => {
+          setSpecialistId(s.specialistId);
+          setDays([s.dayOfWeek]);
+          setTime(s.time);
+          setShowForm(true);
+          toast.success(`تم تعبئة النموذج بـ ${s.specialistName} — ${DAY_LABELS[s.dayOfWeek]} ${s.time}`);
+        }}
+      />
     </Card>
   );
 }
