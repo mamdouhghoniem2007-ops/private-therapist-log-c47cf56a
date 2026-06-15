@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText, PlayCircle } from "lucide-react";
+import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText, PlayCircle, Pause, Play } from "lucide-react";
 import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 import { fmtTime12 } from "@/lib/utils";
 
@@ -505,10 +505,14 @@ export function CasesCard({
   };
 
   const toggleActive = async (c: CaseRow) => {
+    if (c.active) {
+      const ok = window.confirm(`سيتم إيقاف الحالة "${c.name}" وحذف كل المواعيد المستقبلية غير المبدوءة لها، ولن يتم توليد مواعيد جديدة. هل أنت متأكد؟`);
+      if (!ok) return;
+    }
     const { error } = await supabase.from("cases").update({ active: !c.active }).eq("id", c.id);
     if (error) return toast.error(error.message);
     setCases((cs) => cs.map((x) => x.id === c.id ? { ...x, active: !c.active } : x));
-    toast.success(!c.active ? "تم تفعيل الحالة" : "تم إيقاف الحالة");
+    toast.success(!c.active ? "تم تفعيل الحالة وتوليد المواعيد" : "تم إيقاف الحالة وإلغاء توليد المواعيد");
   };
 
   const regenerate = async (c: CaseRow) => {
@@ -722,7 +726,7 @@ export function CasesCard({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`font-semibold ${!c.active ? "text-muted-foreground line-through" : ""}`}>{c.name}</span>
-                      {!c.active && <span className="text-xs rounded bg-muted px-2 py-0.5">موقوفة</span>}
+                      {!c.active && <span className="text-xs rounded bg-destructive/10 text-destructive border border-destructive/30 px-2 py-0.5 font-medium">موقوفة — لا يتم توليد مواعيد</span>}
                       <span className="text-xs text-muted-foreground">— {profilesMap[c.specialist_id] || "—"}</span>
                       <span className="text-[10px] rounded bg-primary/10 text-primary px-1.5 py-0.5">
                         {KIND_OPTIONS.find((k) => k.value === (c.default_session_kind || "regular"))?.label}
@@ -800,12 +804,23 @@ export function CasesCard({
                     })()}
                     {canManage && (
                       <>
-                        <Button size="sm" variant="outline" onClick={() => regenerate(c)} title="توليد مواعيد 8 أسابيع قادمة">
-                          <RefreshCw className="h-4 w-4 ml-1" />
-                          توليد
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => toggleActive(c)}>
-                          {c.active ? "إيقاف" : "تفعيل"}
+                        {c.active && (
+                          <Button size="sm" variant="outline" onClick={() => regenerate(c)} title="توليد مواعيد 8 أسابيع قادمة">
+                            <RefreshCw className="h-4 w-4 ml-1" />
+                            توليد
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleActive(c)}
+                          className={c.active
+                            ? "border-destructive/40 text-destructive hover:bg-destructive/10"
+                            : "border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10"}
+                          title={c.active ? "إيقاف الحالة وإلغاء توليد المواعيد" : "تفعيل الحالة وتوليد المواعيد"}
+                        >
+                          {c.active ? <Pause className="h-4 w-4 ml-1" /> : <Play className="h-4 w-4 ml-1" />}
+                          {c.active ? "إيقاف التوليد" : "تفعيل وتوليد"}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => editingId === c.id ? cancelEdit() : startEdit(c)}>
                           {editingId === c.id ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
