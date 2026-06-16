@@ -1200,7 +1200,17 @@ export function Dashboard({ user }: { user: User }) {
         {isAdmin && <EmployeesCard currentUserId={user.id} onChanged={loadAll} />}
 
         {/* Admin: per-specialist sessions/appointments/cases management */}
-        {isAdmin && <SpecialistsAdminCard specialists={specialists} />}
+        {isAdmin && (
+          <SpecialistsAdminCard
+            specialists={Object.keys(profilesMap)
+              .filter((id) => id !== user.id && (allRoles[id] === "specialist" || allRoles[id] === "supervisor"))
+              .map((id) => ({
+                id,
+                full_name: `${profilesMap[id]}${allRoles[id] === "supervisor" ? " (مشرف)" : ""}`,
+              }))
+              .sort((a, b) => a.full_name.localeCompare(b.full_name, "ar"))}
+          />
+        )}
 
         {/* Sessions — admin (grouped) or specialist (own) */}
         {!isSupervisor && (
