@@ -1202,13 +1202,12 @@ export function Dashboard({ user }: { user: User }) {
         {/* Admin: per-specialist sessions/appointments/cases management */}
         {isAdmin && (
           <SpecialistsAdminCard
-            specialists={Object.keys(profilesMap)
-              .filter((id) => id !== user.id && (allRoles[id] === "specialist" || allRoles[id] === "supervisor"))
-              .map((id) => ({
-                id,
-                full_name: `${profilesMap[id]}${allRoles[id] === "supervisor" ? " (مشرف)" : ""}`,
-              }))
-              .sort((a, b) => a.full_name.localeCompare(b.full_name, "ar"))}
+            specialists={[
+              ...specialists,
+              ...Object.keys(profilesMap)
+                .filter((id) => allRoles[id] === "supervisor" && id !== user.id)
+                .map((id) => ({ id, full_name: `${profilesMap[id]} (مشرف)` })),
+            ].sort((a, b) => a.full_name.localeCompare(b.full_name, "ar"))}
           />
         )}
 
