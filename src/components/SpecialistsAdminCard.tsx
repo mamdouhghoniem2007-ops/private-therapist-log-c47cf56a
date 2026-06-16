@@ -270,12 +270,12 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <UserCog className="h-4 w-4 text-primary" />
-          إدارة بيانات الأخصائيين
+          إدارة بيانات الأخصائيين والمشرفين
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-2 sm:max-w-sm">
-          <Label>اختر الأخصائي</Label>
+          <Label>اختر الأخصائي أو المشرف</Label>
           <Select value={specialistId} onValueChange={setSpecialistId}>
             <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
             <SelectContent>
