@@ -573,15 +573,26 @@ export function CasesCard({
         <CardTitle className="text-base flex items-center justify-between gap-2 flex-wrap">
           <span className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" />
-            ملف الحالات
+            {showArchive ? "أرشيف الحالات" : "ملف الحالات"}
             <span className="text-xs text-muted-foreground font-normal">({visibleCases.length})</span>
           </span>
-          {canManage && (
-            <Button size="sm" variant={showForm ? "secondary" : "default"} onClick={() => setShowForm((s) => !s)}>
-              <Plus className="h-4 w-4 ml-1" />
-              {showForm ? "إغلاق" : "إضافة حالة"}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant={showArchive ? "default" : "outline"}
+              onClick={() => setShowArchive((s) => !s)}
+              title={showArchive ? "العودة للحالات النشطة" : "عرض الأرشيف"}
+            >
+              <Archive className="h-4 w-4 ml-1" />
+              {showArchive ? "العودة" : `الأرشيف${archivedCount ? ` (${archivedCount})` : ""}`}
             </Button>
-          )}
+            {canManage && !showArchive && (
+              <Button size="sm" variant={showForm ? "secondary" : "default"} onClick={() => setShowForm((s) => !s)}>
+                <Plus className="h-4 w-4 ml-1" />
+                {showForm ? "إغلاق" : "إضافة حالة"}
+              </Button>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
