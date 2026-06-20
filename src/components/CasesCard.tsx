@@ -543,10 +543,29 @@ export function CasesCard({
     toast.success("تم حذف الحالة");
   };
 
+  const toggleArchive = async (c: CaseRow) => {
+    const next = !c.archived;
+    if (next && c.active) {
+      const ok = window.confirm(`الحالة "${c.name}" لا تزال مفعّلة. سيتم إيقافها وأرشفتها. هل تريد المتابعة؟`);
+      if (!ok) return;
+    }
+    const payload: { archived: boolean; active?: boolean } = { archived: next };
+    if (next && c.active) payload.active = false;
+    const { error } = await supabase.from("cases").update(payload).eq("id", c.id);
+    if (error) return toast.error(error.message);
+    setCases((cs) => cs.map((x) => x.id === c.id ? { ...x, ...payload } as CaseRow : x));
+    toast.success(next ? "تم نقل الحالة إلى الأرشيف" : "تم استرجاع الحالة من الأرشيف");
+  };
+
   const visibleCases = useMemo(() => {
-    if (canManage) return cases;
-    return cases.filter((c) => c.specialist_id === user.id);
-  }, [cases, canManage, user.id]);
+    const base = canManage ? cases : cases.filter((c) => c.specialist_id === user.id);
+    return base.filter((c) => showArchive ? c.archived : !c.archived);
+  }, [cases, canManage, user.id, showArchive]);
+
+  const archivedCount = useMemo(
+    () => (canManage ? cases : cases.filter((c) => c.specialist_id === user.id)).filter((c) => c.archived).length,
+    [cases, canManage, user.id]
+  );
 
   return (
     <Card className="shadow-[var(--shadow-card)] border-primary/30">
