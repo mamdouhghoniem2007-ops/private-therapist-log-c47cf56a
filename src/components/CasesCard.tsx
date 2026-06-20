@@ -47,6 +47,7 @@ type CaseRow = {
   default_session_subtype: string | null;
   start_date: string;
   active: boolean;
+  archived: boolean;
   notes: string | null;
   payment_type: string;
   discount_percentage: number;
