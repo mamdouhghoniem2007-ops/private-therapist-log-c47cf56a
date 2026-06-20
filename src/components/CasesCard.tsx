@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText, PlayCircle, Pause, Play, Sparkles } from "lucide-react";
+import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText, PlayCircle, Pause, Play, Sparkles, Archive, ArchiveRestore } from "lucide-react";
 import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 import { fmtTime12 } from "@/lib/utils";
 import { SlotSuggestionsDialog, type Suggestion } from "./SlotSuggestionsDialog";
@@ -47,6 +47,7 @@ type CaseRow = {
   default_session_subtype: string | null;
   start_date: string;
   active: boolean;
+  archived: boolean;
   notes: string | null;
   payment_type: string;
   discount_percentage: number;
@@ -105,6 +106,7 @@ export function CasesCard({
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -541,10 +543,29 @@ export function CasesCard({
     toast.success("تم حذف الحالة");
   };
 
+  const toggleArchive = async (c: CaseRow) => {
+    const next = !c.archived;
+    if (next && c.active) {
+      const ok = window.confirm(`الحالة "${c.name}" لا تزال مفعّلة. سيتم إيقافها وأرشفتها. هل تريد المتابعة؟`);
+      if (!ok) return;
+    }
+    const payload: { archived: boolean; active?: boolean } = { archived: next };
+    if (next && c.active) payload.active = false;
+    const { error } = await supabase.from("cases").update(payload).eq("id", c.id);
+    if (error) return toast.error(error.message);
+    setCases((cs) => cs.map((x) => x.id === c.id ? { ...x, ...payload } as CaseRow : x));
+    toast.success(next ? "تم نقل الحالة إلى الأرشيف" : "تم استرجاع الحالة من الأرشيف");
+  };
+
   const visibleCases = useMemo(() => {
-    if (canManage) return cases;
-    return cases.filter((c) => c.specialist_id === user.id);
-  }, [cases, canManage, user.id]);
+    const base = canManage ? cases : cases.filter((c) => c.specialist_id === user.id);
+    return base.filter((c) => showArchive ? c.archived : !c.archived);
+  }, [cases, canManage, user.id, showArchive]);
+
+  const archivedCount = useMemo(
+    () => (canManage ? cases : cases.filter((c) => c.specialist_id === user.id)).filter((c) => c.archived).length,
+    [cases, canManage, user.id]
+  );
 
   return (
     <Card className="shadow-[var(--shadow-card)] border-primary/30">
@@ -552,15 +573,26 @@ export function CasesCard({
         <CardTitle className="text-base flex items-center justify-between gap-2 flex-wrap">
           <span className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" />
-            ملف الحالات
+            {showArchive ? "أرشيف الحالات" : "ملف الحالات"}
             <span className="text-xs text-muted-foreground font-normal">({visibleCases.length})</span>
           </span>
-          {canManage && (
-            <Button size="sm" variant={showForm ? "secondary" : "default"} onClick={() => setShowForm((s) => !s)}>
-              <Plus className="h-4 w-4 ml-1" />
-              {showForm ? "إغلاق" : "إضافة حالة"}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant={showArchive ? "default" : "outline"}
+              onClick={() => setShowArchive((s) => !s)}
+              title={showArchive ? "العودة للحالات النشطة" : "عرض الأرشيف"}
+            >
+              <Archive className="h-4 w-4 ml-1" />
+              {showArchive ? "العودة" : `الأرشيف${archivedCount ? ` (${archivedCount})` : ""}`}
             </Button>
-          )}
+            {canManage && !showArchive && (
+              <Button size="sm" variant={showForm ? "secondary" : "default"} onClick={() => setShowForm((s) => !s)}>
+                <Plus className="h-4 w-4 ml-1" />
+                {showForm ? "إغلاق" : "إضافة حالة"}
+              </Button>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -835,6 +867,18 @@ export function CasesCard({
                         >
                           {c.active ? <Pause className="h-4 w-4 ml-1" /> : <Play className="h-4 w-4 ml-1" />}
                           {c.active ? "إيقاف التوليد" : "تفعيل وتوليد"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleArchive(c)}
+                          className={c.archived
+                            ? "border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10"
+                            : "border-amber-500/40 text-amber-700 hover:bg-amber-500/10"}
+                          title={c.archived ? "استرجاع من الأرشيف" : "نقل إلى الأرشيف"}
+                        >
+                          {c.archived ? <ArchiveRestore className="h-4 w-4 ml-1" /> : <Archive className="h-4 w-4 ml-1" />}
+                          {c.archived ? "استرجاع" : "أرشفة"}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => editingId === c.id ? cancelEdit() : startEdit(c)}>
                           {editingId === c.id ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
