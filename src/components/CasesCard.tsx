@@ -106,6 +106,7 @@ export function CasesCard({
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
