@@ -868,6 +868,18 @@ export function CasesCard({
                           {c.active ? <Pause className="h-4 w-4 ml-1" /> : <Play className="h-4 w-4 ml-1" />}
                           {c.active ? "إيقاف التوليد" : "تفعيل وتوليد"}
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleArchive(c)}
+                          className={c.archived
+                            ? "border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10"
+                            : "border-amber-500/40 text-amber-700 hover:bg-amber-500/10"}
+                          title={c.archived ? "استرجاع من الأرشيف" : "نقل إلى الأرشيف"}
+                        >
+                          {c.archived ? <ArchiveRestore className="h-4 w-4 ml-1" /> : <Archive className="h-4 w-4 ml-1" />}
+                          {c.archived ? "استرجاع" : "أرشفة"}
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => editingId === c.id ? cancelEdit() : startEdit(c)}>
                           {editingId === c.id ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
                         </Button>
