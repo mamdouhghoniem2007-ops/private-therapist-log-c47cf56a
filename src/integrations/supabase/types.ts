@@ -122,6 +122,7 @@ export type Database = {
       cases: {
         Row: {
           active: boolean
+          archived: boolean
           created_at: string
           created_by: string | null
           default_cost: number
@@ -143,6 +144,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          archived?: boolean
           created_at?: string
           created_by?: string | null
           default_cost?: number
@@ -164,6 +166,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          archived?: boolean
           created_at?: string
           created_by?: string | null
           default_cost?: number
