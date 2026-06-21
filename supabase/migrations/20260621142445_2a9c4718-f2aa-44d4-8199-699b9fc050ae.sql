@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.sessions_guard_specialist_updates() FROM PUBLIC, anon, authenticated;
