@@ -113,7 +113,7 @@ export function WeeklyScheduleGrid({
 
   // Determine time range from availability + appointments (fallback 09:00 - 21:00)
   const { startMin, endMin } = useMemo(() => {
-    let mn = 9 * 60;
+    let mn = 12 * 60;
     let mx = 21 * 60;
     for (const av of filteredAvail) {
       mn = Math.min(mn, toMin(av.start_time));
