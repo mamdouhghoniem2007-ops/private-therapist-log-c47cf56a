@@ -110,6 +110,7 @@ export function QuickAppointmentDialog({
       setSpecialistId(preset?.specialistId || "");
       setCaseId("");
       setCaseName("");
+      setCaseWhatsapp("");
       setDate(preset?.date || new Date().toISOString().slice(0, 10));
       setTime(preset?.time || new Date().toTimeString().slice(0, 5));
       setDuration(45);
