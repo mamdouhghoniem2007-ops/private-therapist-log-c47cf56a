@@ -66,6 +66,7 @@ export function QuickAppointmentDialog({
   const [specialistId, setSpecialistId] = useState<string>("");
   const [caseId, setCaseId] = useState<string>("");
   const [caseName, setCaseName] = useState<string>("");
+  const [caseWhatsapp, setCaseWhatsapp] = useState<string>("");
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
   const [duration, setDuration] = useState<number>(45);
@@ -97,6 +98,7 @@ export function QuickAppointmentDialog({
       setSpecialistId(appointment.specialist_id);
       setCaseId(appointment.case_id || "");
       setCaseName(appointment.case_name);
+      setCaseWhatsapp(appointment.case_whatsapp || "");
       setDate(appointment.scheduled_date);
       setTime(appointment.scheduled_time.slice(0, 5));
       setDuration(appointment.duration_minutes);
@@ -108,6 +110,7 @@ export function QuickAppointmentDialog({
       setSpecialistId(preset?.specialistId || "");
       setCaseId("");
       setCaseName("");
+      setCaseWhatsapp("");
       setDate(preset?.date || new Date().toISOString().slice(0, 10));
       setTime(preset?.time || new Date().toTimeString().slice(0, 5));
       setDuration(45);
@@ -130,6 +133,7 @@ export function QuickAppointmentDialog({
     const c = cases.find((x) => x.id === id);
     if (!c) return;
     setCaseName(c.name);
+    setCaseWhatsapp(c.whatsapp || "");
     if (!specialistId) setSpecialistId(c.specialist_id);
     setDuration(c.default_duration_minutes || 45);
     setPercentage(Number(c.default_specialist_percentage) || 50);
@@ -147,7 +151,7 @@ export function QuickAppointmentDialog({
       specialist_id: specialistId,
       case_id: caseId || null,
       case_name: (caseName || c?.name || "").trim(),
-      case_whatsapp: c?.whatsapp || null,
+      case_whatsapp: (caseWhatsapp.trim() || c?.whatsapp || null),
       scheduled_date: date,
       scheduled_time: time,
       duration_minutes: duration,
@@ -245,6 +249,17 @@ export function QuickAppointmentDialog({
                 onChange={(e) => setCaseName(e.target.value)}
               />
             )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>رقم واتساب الحالة {!caseId && <span className="text-xs text-muted-foreground">(لإرسال تأكيد الموعد)</span>}</Label>
+            <Input
+              type="tel"
+              dir="ltr"
+              placeholder="مثال: 201001234567"
+              value={caseWhatsapp}
+              onChange={(e) => setCaseWhatsapp(e.target.value)}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
