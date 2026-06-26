@@ -211,6 +211,45 @@ export function CasesCard({
     toast.success("تم تسجيل غياب الحالة اليوم 🔴");
   };
 
+  // Update a single appointment status from inside a case row (admin/supervisor)
+  const setApptStatus = async (
+    c: CaseRow,
+    apptId: string,
+    kind: "attended" | "apologized" | "absent" | "scheduled",
+  ) => {
+    const nowIso = new Date().toISOString();
+    const patch =
+      kind === "attended"
+        ? { status: "attended", ended_at: nowIso }
+        : kind === "scheduled"
+        ? { status: "scheduled", started_at: null, ended_at: null }
+        : { status: kind, started_at: null, ended_at: null };
+    const { error } = await supabase.from("appointments").update(patch).eq("id", apptId);
+    if (error) { toast.error(error.message); return; }
+    setAppts((a) => {
+      const list = a[c.id];
+      if (!list) return a;
+      return { ...a, [c.id]: list.map((x) => x.id === apptId ? { ...x, status: patch.status } : x) };
+    });
+    toast.success(
+      kind === "attended" ? "تم تسجيل الحضور" :
+      kind === "apologized" ? "تم تسجيل الاعتذار" :
+      kind === "absent" ? "تم تسجيل الغياب" : "تم إرجاع الموعد",
+    );
+  };
+
+  const removeAppt = async (c: CaseRow, apptId: string) => {
+    if (!confirm("حذف هذا الموعد؟")) return;
+    const { error } = await supabase.from("appointments").delete().eq("id", apptId);
+    if (error) { toast.error(error.message); return; }
+    setAppts((a) => {
+      const list = a[c.id];
+      if (!list) return a;
+      return { ...a, [c.id]: list.filter((x) => x.id !== apptId) };
+    });
+    toast.success("تم حذف الموعد");
+  };
+
   const openCaseLog = async (c: CaseRow) => {
     const todayStr = today();
     // اجلب كل الجلسات السابقة للحالة حتى تاريخ اليوم (تراكمي)
@@ -1047,15 +1086,47 @@ export function CasesCard({
                     ) : (
                       <ul className="space-y-1">
                         {appts[c.id].map((a) => (
-                          <li key={a.id} className="text-xs flex items-center justify-between gap-2 px-2 py-1 rounded bg-background">
-                            <span>
-                              {new Date(a.scheduled_date).toLocaleDateString("ar-EG", { weekday: "short", day: "2-digit", month: "2-digit" })}
-                              <span dir="ltr"> · {fmtTime12(a.scheduled_time)}</span>
+                          <li key={a.id} className="text-xs flex flex-wrap items-center justify-between gap-2 px-2 py-1 rounded bg-background">
+                            <span className="flex items-center gap-1.5 flex-wrap">
+                              <span>
+                                {new Date(a.scheduled_date).toLocaleDateString("ar-EG", { weekday: "short", day: "2-digit", month: "2-digit" })}
+                                <span dir="ltr"> · {fmtTime12(a.scheduled_time)}</span>
+                              </span>
+                              <span className="text-muted-foreground">— {KIND_LABEL[a.session_kind] || a.session_kind}</span>
+                              {a.status === "attended" && <span className="rounded bg-blue-500/15 text-blue-700 px-1.5 py-0.5 font-semibold">حضرت</span>}
+                              {(a.status === "apologized" || a.status === "cancelled") && <span className="rounded bg-orange-500/15 text-orange-700 px-1.5 py-0.5 font-semibold">معتذرة</span>}
+                              {a.status === "absent" && <span className="rounded bg-red-500/15 text-red-700 px-1.5 py-0.5 font-semibold">غائبة</span>}
                             </span>
-                            <span className="flex items-center gap-1.5">
-                              <span className="text-muted-foreground">{KIND_LABEL[a.session_kind] || a.session_kind}</span>
-                              {a.status !== "scheduled" && (
-                                <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5">{a.status}</span>
+                            <span className="flex items-center gap-1 flex-wrap">
+                              {canManage && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant={a.status === "attended" ? "default" : "outline"}
+                                    className={`h-6 px-2 text-[11px] ${a.status === "attended" ? "bg-blue-600 hover:bg-blue-700 text-white" : "border-blue-500/50 text-blue-700 hover:bg-blue-500/10"}`}
+                                    onClick={() => setApptStatus(c, a.id, "attended")}
+                                  >حضرت</Button>
+                                  <Button
+                                    size="sm"
+                                    variant={(a.status === "apologized" || a.status === "cancelled") ? "default" : "outline"}
+                                    className={`h-6 px-2 text-[11px] ${(a.status === "apologized" || a.status === "cancelled") ? "bg-orange-500 hover:bg-orange-600 text-white" : "border-orange-500/50 text-orange-700 hover:bg-orange-500/10"}`}
+                                    onClick={() => setApptStatus(c, a.id, "apologized")}
+                                  >معتذرة</Button>
+                                  <Button
+                                    size="sm"
+                                    variant={a.status === "absent" ? "default" : "outline"}
+                                    className={`h-6 px-2 text-[11px] ${a.status === "absent" ? "bg-red-600 hover:bg-red-700 text-white" : "border-red-500/50 text-red-700 hover:bg-red-500/10"}`}
+                                    onClick={() => setApptStatus(c, a.id, "absent")}
+                                  >غائبة</Button>
+                                  {a.status !== "scheduled" && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-6 px-2 text-[11px] border-amber-500/40 text-amber-700 hover:bg-amber-500/10"
+                                      onClick={() => setApptStatus(c, a.id, "scheduled")}
+                                    >إرجاع</Button>
+                                  )}
+                                </>
                               )}
                               {canManage && c.whatsapp && (() => {
                                 const link = waLink(c.whatsapp, formatAppointmentMessage({
@@ -1074,6 +1145,17 @@ export function CasesCard({
                                   </a>
                                 ) : null;
                               })()}
+                              {canManage && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => removeAppt(c, a.id)}
+                                  title="حذف الموعد"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              )}
                             </span>
                           </li>
                         ))}
