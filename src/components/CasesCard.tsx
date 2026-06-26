@@ -218,7 +218,7 @@ export function CasesCard({
     kind: "attended" | "apologized" | "absent" | "scheduled",
   ) => {
     const nowIso = new Date().toISOString();
-    const patch: Record<string, any> =
+    const patch =
       kind === "attended"
         ? { status: "attended", ended_at: nowIso }
         : kind === "scheduled"
