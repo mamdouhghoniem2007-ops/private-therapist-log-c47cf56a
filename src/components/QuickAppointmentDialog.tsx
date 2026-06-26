@@ -66,6 +66,7 @@ export function QuickAppointmentDialog({
   const [specialistId, setSpecialistId] = useState<string>("");
   const [caseId, setCaseId] = useState<string>("");
   const [caseName, setCaseName] = useState<string>("");
+  const [caseWhatsapp, setCaseWhatsapp] = useState<string>("");
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
   const [duration, setDuration] = useState<number>(45);
