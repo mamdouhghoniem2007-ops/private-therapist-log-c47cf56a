@@ -98,6 +98,7 @@ export function QuickAppointmentDialog({
       setSpecialistId(appointment.specialist_id);
       setCaseId(appointment.case_id || "");
       setCaseName(appointment.case_name);
+      setCaseWhatsapp(appointment.case_whatsapp || "");
       setDate(appointment.scheduled_date);
       setTime(appointment.scheduled_time.slice(0, 5));
       setDuration(appointment.duration_minutes);
