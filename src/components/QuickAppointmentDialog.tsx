@@ -251,16 +251,19 @@ export function QuickAppointmentDialog({
             )}
           </div>
 
-          <div className="space-y-1.5">
-            <Label>رقم واتساب الحالة {!caseId && <span className="text-xs text-muted-foreground">(لإرسال تأكيد الموعد)</span>}</Label>
-            <Input
-              type="tel"
-              dir="ltr"
-              placeholder="مثال: 201001234567"
-              value={caseWhatsapp}
-              onChange={(e) => setCaseWhatsapp(e.target.value)}
-            />
-          </div>
+          {!caseId && (
+            <div className="space-y-1.5">
+              <Label>رقم واتساب الحالة <span className="text-xs text-muted-foreground">(لإرسال تأكيد الموعد)</span></Label>
+              <Input
+                type="tel"
+                dir="ltr"
+                placeholder="مثال: 201001234567"
+                value={caseWhatsapp}
+                onChange={(e) => setCaseWhatsapp(e.target.value)}
+              />
+            </div>
+          )}
+
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
