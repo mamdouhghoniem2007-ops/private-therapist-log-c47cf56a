@@ -211,6 +211,45 @@ export function CasesCard({
     toast.success("تم تسجيل غياب الحالة اليوم 🔴");
   };
 
+  // Update a single appointment status from inside a case row (admin/supervisor)
+  const setApptStatus = async (
+    c: CaseRow,
+    apptId: string,
+    kind: "attended" | "apologized" | "absent" | "scheduled",
+  ) => {
+    const nowIso = new Date().toISOString();
+    const patch: Record<string, any> =
+      kind === "attended"
+        ? { status: "attended", ended_at: nowIso }
+        : kind === "scheduled"
+        ? { status: "scheduled", started_at: null, ended_at: null }
+        : { status: kind, started_at: null, ended_at: null };
+    const { error } = await supabase.from("appointments").update(patch).eq("id", apptId);
+    if (error) { toast.error(error.message); return; }
+    setAppts((a) => {
+      const list = a[c.id];
+      if (!list) return a;
+      return { ...a, [c.id]: list.map((x) => x.id === apptId ? { ...x, status: patch.status } : x) };
+    });
+    toast.success(
+      kind === "attended" ? "تم تسجيل الحضور" :
+      kind === "apologized" ? "تم تسجيل الاعتذار" :
+      kind === "absent" ? "تم تسجيل الغياب" : "تم إرجاع الموعد",
+    );
+  };
+
+  const removeAppt = async (c: CaseRow, apptId: string) => {
+    if (!confirm("حذف هذا الموعد؟")) return;
+    const { error } = await supabase.from("appointments").delete().eq("id", apptId);
+    if (error) { toast.error(error.message); return; }
+    setAppts((a) => {
+      const list = a[c.id];
+      if (!list) return a;
+      return { ...a, [c.id]: list.filter((x) => x.id !== apptId) };
+    });
+    toast.success("تم حذف الموعد");
+  };
+
   const openCaseLog = async (c: CaseRow) => {
     const todayStr = today();
     // اجلب كل الجلسات السابقة للحالة حتى تاريخ اليوم (تراكمي)
