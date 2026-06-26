@@ -133,6 +133,7 @@ export function QuickAppointmentDialog({
     const c = cases.find((x) => x.id === id);
     if (!c) return;
     setCaseName(c.name);
+    setCaseWhatsapp(c.whatsapp || "");
     if (!specialistId) setSpecialistId(c.specialist_id);
     setDuration(c.default_duration_minutes || 45);
     setPercentage(Number(c.default_specialist_percentage) || 50);
