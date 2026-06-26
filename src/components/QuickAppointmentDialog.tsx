@@ -151,7 +151,7 @@ export function QuickAppointmentDialog({
       specialist_id: specialistId,
       case_id: caseId || null,
       case_name: (caseName || c?.name || "").trim(),
-      case_whatsapp: c?.whatsapp || null,
+      case_whatsapp: (caseWhatsapp.trim() || c?.whatsapp || null),
       scheduled_date: date,
       scheduled_time: time,
       duration_minutes: duration,
