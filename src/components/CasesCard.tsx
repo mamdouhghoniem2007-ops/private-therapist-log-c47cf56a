@@ -362,6 +362,127 @@ export function CasesCard({
     w.document.close();
   };
 
+  // شيت الحضور والمدفوعات لكل طفل — بأثر رجعي من 1 يونيو 2026
+  const openAttendanceSheet = async (c: CaseRow) => {
+    const FROM = "2026-06-01";
+    const todayStr = today();
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("scheduled_date, scheduled_time, duration_minutes, session_kind, session_type, test_type, status, cost, discount_percentage, payment_type")
+      .eq("case_id", c.id)
+      .gte("scheduled_date", FROM)
+      .lte("scheduled_date", todayStr)
+      .order("scheduled_date", { ascending: true })
+      .order("scheduled_time", { ascending: true });
+    if (error) { toast.error(error.message); return; }
+
+    const rows = (data as any[]) || [];
+    const statusLabel = (s: string) =>
+      s === "attended" ? "حضر" :
+      s === "apologized" ? "اعتذار" :
+      s === "absent" ? "غياب" :
+      s === "cancelled" ? "ملغي" : "مجدول";
+    const statusClass = (s: string) =>
+      s === "attended" ? "ok" : s === "apologized" ? "warn" : s === "absent" ? "bad" : "";
+
+    let totalAttended = 0, totalAbsent = 0, totalApology = 0, totalPaid = 0;
+    const bodyRows = rows.map((r) => {
+      const cost = Number(r.cost) || 0;
+      const disc = Number(r.discount_percentage) || 0;
+      const net = +(cost * (1 - disc / 100)).toFixed(2);
+      const paid = r.status === "attended" ? net : 0;
+      if (r.status === "attended") { totalAttended++; totalPaid += paid; }
+      else if (r.status === "absent") totalAbsent++;
+      else if (r.status === "apologized") totalApology++;
+      const kind = r.test_type || r.session_type || KIND_LABEL[r.session_kind] || r.session_kind || "جلسة";
+      return `<tr class="${statusClass(r.status)}">
+        <td>${r.scheduled_date}</td>
+        <td>${fmtTime12(r.scheduled_time)}</td>
+        <td>${r.duration_minutes || ""}</td>
+        <td>${kind}</td>
+        <td>${statusLabel(r.status)}</td>
+        <td>${cost ? cost.toFixed(2) : "—"}</td>
+        <td>${disc ? disc + "%" : "—"}</td>
+        <td>${net ? net.toFixed(2) : "—"}</td>
+        <td>${paid ? paid.toFixed(2) : "—"}</td>
+      </tr>`;
+    }).join("");
+
+    const headers = ["التاريخ", "الوقت", "المدة (د)", "النوع", "الحالة", "السعر", "الخصم", "الصافي", "المدفوع"];
+    const esc = (v: any) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = "\uFEFF" + [
+      headers.map(esc).join(","),
+      ...rows.map((r) => {
+        const cost = Number(r.cost) || 0;
+        const disc = Number(r.discount_percentage) || 0;
+        const net = +(cost * (1 - disc / 100)).toFixed(2);
+        const paid = r.status === "attended" ? net : 0;
+        const kind = r.test_type || r.session_type || KIND_LABEL[r.session_kind] || r.session_kind || "جلسة";
+        return [r.scheduled_date, fmtTime12(r.scheduled_time), r.duration_minutes || "", kind, statusLabel(r.status), cost || "", disc || "", net || "", paid || ""].map(esc).join(",");
+      }),
+    ].join("\n");
+    const csvDataUri = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+    const fileName = `شيت-حضور-${c.name}-${todayStr}.csv`;
+
+    const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+    <title>شيت الحضور والمدفوعات - ${c.name}</title>
+    <style>
+      body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:22px;color:#111}
+      h1{margin:0 0 4px;font-size:20px}
+      .meta{color:#555;font-size:12px;margin-bottom:10px}
+      .summary{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 14px}
+      .chip{padding:8px 12px;border:1px solid #ccc;border-radius:8px;font-size:13px;background:#fafafa}
+      .chip b{font-size:15px;margin-inline-start:6px}
+      table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+      th,td{border:1px solid #999;padding:6px 7px;text-align:center;vertical-align:top}
+      thead{background:#f0f0f0}
+      tr.ok{background:#effaf0}
+      tr.warn{background:#fff7e6}
+      tr.bad{background:#fdecec}
+      tfoot td{font-weight:bold;background:#f5f5f5}
+      .toolbar{margin:0 0 14px;display:flex;gap:10px;flex-wrap:wrap}
+      .toolbar a,.toolbar button{padding:8px 14px;font-size:13px;border:1px solid #888;border-radius:6px;background:#fafafa;cursor:pointer;text-decoration:none;color:#111}
+      @media print { .noprint{display:none} body{padding:10px} }
+    </style></head><body>
+    <h1>شيت الحضور والمدفوعات — ${c.name}</h1>
+    <div class="meta">
+      الأخصائي: ${profilesMap[c.specialist_id] || "—"} ·
+      طريقة الدفع: ${PAYMENT_TYPE_LABEL[c.payment_type] || c.payment_type} ·
+      الفترة: من ${FROM} إلى ${todayStr} ·
+      تاريخ الطباعة: ${new Date().toLocaleString("ar-EG")}
+    </div>
+    <div class="summary">
+      <div class="chip">إجمالي المواعيد <b>${rows.length}</b></div>
+      <div class="chip">حضور <b style="color:#137333">${totalAttended}</b></div>
+      <div class="chip">اعتذار <b style="color:#a15c00">${totalApology}</b></div>
+      <div class="chip">غياب <b style="color:#b3261e">${totalAbsent}</b></div>
+      <div class="chip">إجمالي المدفوع <b>${totalPaid.toFixed(2)}</b></div>
+    </div>
+    <div class="toolbar noprint">
+      <button onclick="window.print()">طباعة</button>
+      <a href="${csvDataUri}" download="${fileName}">تنزيل Excel/CSV</a>
+    </div>
+    <table>
+      <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${bodyRows || `<tr><td colspan="${headers.length}">لا توجد مواعيد في هذه الفترة</td></tr>`}</tbody>
+      <tfoot><tr>
+        <td colspan="4">الإجمالي</td>
+        <td>${totalAttended} حضور · ${totalApology} اعتذار · ${totalAbsent} غياب</td>
+        <td colspan="3">—</td>
+        <td>${totalPaid.toFixed(2)}</td>
+      </tr></tfoot>
+    </table>
+    </body></html>`;
+
+    const w = window.open("", "_blank");
+    if (!w) { toast.error("فشل فتح النافذة — تأكد من السماح بالنوافذ المنبثقة"); return; }
+    w.document.write(html);
+    w.document.close();
+  };
+
 
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -843,6 +964,12 @@ export function CasesCard({
                       <FileText className="h-4 w-4 ml-1" />
                       السجل
                     </Button>
+                    {canSeeFinancial && (
+                      <Button size="sm" variant="outline" onClick={() => openAttendanceSheet(c)} title="شيت الحضور والمدفوعات من 1 يونيو 2026">
+                        <FileText className="h-4 w-4 ml-1" />
+                        شيت الحضور
+                      </Button>
+                    )}
                     {c.active && !isSupervisor && (role === "admin" || c.specialist_id === user.id) && (
                       <Button
                         size="sm"
