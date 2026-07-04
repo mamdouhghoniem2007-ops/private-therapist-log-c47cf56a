@@ -964,6 +964,12 @@ export function CasesCard({
                       <FileText className="h-4 w-4 ml-1" />
                       السجل
                     </Button>
+                    {canSeeFinancial && (
+                      <Button size="sm" variant="outline" onClick={() => openAttendanceSheet(c)} title="شيت الحضور والمدفوعات من 1 يونيو 2026">
+                        <FileText className="h-4 w-4 ml-1" />
+                        شيت الحضور
+                      </Button>
+                    )}
                     {c.active && !isSupervisor && (role === "admin" || c.specialist_id === user.id) && (
                       <Button
                         size="sm"
