@@ -41,3 +41,48 @@ export function formatAppointmentMessage(opts: {
   );
   return lines.join("\n");
 }
+
+export function formatAbsenceWarningMessage(opts: {
+  caseName: string;
+  date: string; // YYYY-MM-DD
+  time?: string | null;
+  absenceCount?: number | null; // إجمالي مرات الغياب (بما فيها اليوم)
+  specialistName?: string | null;
+}): string {
+  const d = new Date(opts.date);
+  const dateTxt = isNaN(d.getTime())
+    ? opts.date
+    : d.toLocaleDateString("ar-EG", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const timeTxt = opts.time ? fmtTime12(opts.time) : "";
+  const count = Number(opts.absenceCount || 0);
+  const repeated = count >= 2;
+
+  const lines = [
+    `⚠️ *تنبيه غياب — ${opts.caseName}*`,
+    ``,
+    `السلام عليكم ورحمة الله وبركاته،`,
+    `نودّ إعلامكم بأن الطفل *${opts.caseName}* لم يحضر جلسته المقررة:`,
+    ``,
+    `📅 *اليوم:* ${dateTxt}`,
+  ];
+  if (timeTxt) lines.push(`🕐 *الساعة:* ${timeTxt}`);
+  if (opts.specialistName) lines.push(`👤 *الأخصائي:* ${opts.specialistName}`);
+  if (count > 0) {
+    lines.push(``, `📊 *إجمالي مرات الغياب حتى الآن:* ${count}`);
+  }
+  lines.push(
+    ``,
+    repeated
+      ? `نلفت انتباه حضرتكم إلى أن *تكرار الغياب* يؤثر بشكل مباشر على تقدّم الحالة وانتظام الخطة العلاجية للطفل، وقد يُبطئ من ظهور النتائج المرجوّة من الجلسات.`
+      : `نلفت انتباه حضرتكم إلى أن *الغياب المتكرر* عن الجلسات يؤثر على تقدّم الحالة وانتظام الخطة العلاجية للطفل.`,
+    ``,
+    `🔔 برجاء *الالتزام بالمواعيد* أو *الاعتذار مسبقًا* حال وجود أي ظرف، حتى نتمكن من إعادة جدولة الجلسة وإتاحة الوقت لحالة أخرى.`,
+    ``,
+    `في حال وجود أي استفسار أو رغبة في تغيير الموعد، نرجو التواصل معنا.`,
+    ``,
+    `شاكرين لحضرتكم حسن التعاون 🤝`,
+    `— مركز رعاية`,
+  );
+  return lines.join("\n");
+}
+
