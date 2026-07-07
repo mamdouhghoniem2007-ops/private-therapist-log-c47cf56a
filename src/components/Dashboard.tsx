@@ -1416,6 +1416,36 @@ function AppointmentRow({
           </Button>
         );
       })()}
+      {isAbsent && a.case_whatsapp && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-red-500/50 text-red-700 hover:bg-red-500/10"
+          onClick={async () => {
+            let count = 1;
+            if (a.case_id) {
+              const { count: c } = await supabase
+                .from("appointments")
+                .select("id", { count: "exact", head: true })
+                .eq("case_id", a.case_id)
+                .eq("status", "absent");
+              if (typeof c === "number" && c > 0) count = c;
+            }
+            const link = waLink(a.case_whatsapp, formatAbsenceWarningMessage({
+              caseName: a.case_name,
+              date: a.scheduled_date,
+              time: a.scheduled_time,
+              absenceCount: count,
+              specialistName: specialistName || undefined,
+            }));
+            if (link) window.open(link, "_blank", "noopener,noreferrer");
+          }}
+        >
+          <MessageCircle className="h-4 w-4 ml-1" />
+          تنبيه غياب
+        </Button>
+      )}
+
       {onCancel && !isInactive && !onAttendance && (
         <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10" onClick={onCancel}>
           اعتذرت اليوم
