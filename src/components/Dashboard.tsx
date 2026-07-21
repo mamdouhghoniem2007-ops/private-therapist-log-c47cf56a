@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog, Download, MessageCircle, Printer } from "lucide-react";
 import { waLink, formatAppointmentMessage, formatAbsenceWarningMessage } from "@/lib/whatsapp";
 import { fmtTime12 } from "@/lib/utils";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.png.asset.json";
 import { AttendanceCard } from "@/components/AttendanceCard";
 import { CasesCard } from "@/components/CasesCard";
 import { EmployeesCard } from "@/components/EmployeesCard";
@@ -965,7 +965,7 @@ export function Dashboard({ user }: { user: User }) {
       <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-10">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="مركز رعاية" className="h-12 w-auto" />
+            <img src={logo.url} alt="مركز رعاية" className="h-12 w-auto" />
             <div>
               <p className="font-bold text-primary leading-tight">مركز رعاية</p>
               <p className="text-[11px] text-accent-foreground leading-tight">للتخاطب والتأهيل</p>
