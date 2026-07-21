@@ -85,7 +85,7 @@ export function AuthForm() {
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-lg shadow-[var(--shadow-card)] border-primary/10">
           <CardHeader className="text-center">
-            <img src={logo} alt="مركز رعاية للتخاطب والتأهيل" className="mx-auto h-24 w-auto" />
+<img src={logo.url} alt="مركز رعاية للتخاطب والتأهيل" className="mx-auto h-24 w-auto" />
             <CardTitle className="text-2xl mt-2 text-primary">مركز رعاية</CardTitle>
             <CardDescription className="text-accent-foreground">للتخاطب والتأهيل</CardDescription>
             <div className="mt-3 pt-3 border-t">
@@ -135,7 +135,7 @@ export function AuthForm() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-[var(--shadow-card)] border-primary/10">
         <CardHeader className="text-center">
-          <img src={logo} alt="مركز رعاية للتخاطب والتأهيل" className="mx-auto h-24 w-auto" />
+          <img src={logo.url} alt="مركز رعاية للتخاطب والتأهيل" className="mx-auto h-24 w-auto" />
           <CardTitle className="text-2xl mt-2 text-primary">مركز رعاية</CardTitle>
           <CardDescription className="text-accent-foreground">للتخاطب والتأهيل</CardDescription>
           <div className="mt-3 pt-3 border-t">
