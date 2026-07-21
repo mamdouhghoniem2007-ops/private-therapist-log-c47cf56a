@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Clock, DollarSign, TrendingUp, CalendarDays, Shield, Users, CalendarPlus, CalendarClock, UserCog, Download, MessageCircle, Printer } from "lucide-react";
 import { waLink, formatAppointmentMessage, formatAbsenceWarningMessage } from "@/lib/whatsapp";
 import { fmtTime12 } from "@/lib/utils";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.png.asset.json";
 import { AttendanceCard } from "@/components/AttendanceCard";
 import { CasesCard } from "@/components/CasesCard";
 import { EmployeesCard } from "@/components/EmployeesCard";
