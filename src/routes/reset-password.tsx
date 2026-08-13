@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.png.asset.json";
 
 export const Route = createFileRoute("/reset-password")({
   component: ResetPassword,
@@ -47,7 +47,7 @@ function ResetPassword() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-[var(--shadow-card)]">
         <CardHeader className="text-center">
-          <img src={logo} alt="مركز رعاية" className="mx-auto h-20 w-auto" />
+          <img src={logo.url} alt="مركز رعاية" className="mx-auto h-20 w-auto" />
           <CardTitle className="text-xl mt-2">تعيين كلمة مرور جديدة</CardTitle>
           <CardDescription>
             {ready ? "اختر كلمة مرور جديدة لحسابك" : "جارٍ التحقق من رابط الاستعادة..."}
