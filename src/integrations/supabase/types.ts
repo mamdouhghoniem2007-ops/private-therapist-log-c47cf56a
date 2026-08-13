@@ -188,6 +188,62 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          case_id: string
+          case_name: string
+          created_at: string
+          created_by: string | null
+          id: string
+          method: string
+          notes: string | null
+          paid_at: string
+          period_from: string | null
+          period_to: string | null
+          receipt_no: number
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          case_id: string
+          case_name: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          method?: string
+          notes?: string | null
+          paid_at?: string
+          period_from?: string | null
+          period_to?: string | null
+          receipt_no?: never
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          case_id?: string
+          case_name?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          method?: string
+          notes?: string | null
+          paid_at?: string
+          period_from?: string | null
+          period_to?: string | null
+          receipt_no?: never
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
