@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText, PlayCircle, Pause, Play, Sparkles, Archive, ArchiveRestore } from "lucide-react";
+import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText, PlayCircle, Pause, Play, Sparkles, Archive, ArchiveRestore, Wallet } from "lucide-react";
 import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 import { fmtTime12 } from "@/lib/utils";
 import { SlotSuggestionsDialog, type Suggestion } from "./SlotSuggestionsDialog";
+import { CasePaymentsDialog, type PaymentCase } from "./CasePaymentsDialog";
 
 type CaseAppt = {
   id: string;
@@ -108,6 +109,7 @@ export function CasesCard({
   const [showForm, setShowForm] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
+  const [paymentsCase, setPaymentsCase] = useState<PaymentCase | null>(null);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [appts, setAppts] = useState<Record<string, CaseAppt[]>>({});
@@ -968,6 +970,12 @@ export function CasesCard({
                       <Button size="sm" variant="outline" onClick={() => openAttendanceSheet(c)} title="شيت الحضور والمدفوعات من 1 يونيو 2026">
                         <FileText className="h-4 w-4 ml-1" />
                         شيت الحضور
+                      </Button>
+                    )}
+                    {canManage && (
+                      <Button size="sm" variant="outline" className="border-amber-500/50 text-amber-700 hover:bg-amber-500/10" onClick={() => setPaymentsCase(c)} title="المدفوعات والفواتير">
+                        <Wallet className="h-4 w-4 ml-1" />
+                        المدفوعات
                       </Button>
                     )}
                     {c.active && !isSupervisor && (role === "admin" || c.specialist_id === user.id) && (
