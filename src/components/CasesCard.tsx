@@ -1350,6 +1350,15 @@ export function CasesCard({
           toast.success(`تم تعبئة النموذج بـ ${s.specialistName} — ${DAY_LABELS[s.dayOfWeek]} ${s.time}`);
         }}
       />
+
+      <CasePaymentsDialog
+        open={!!paymentsCase}
+        onOpenChange={(v) => { if (!v) setPaymentsCase(null); }}
+        caseRow={paymentsCase}
+        specialistName={paymentsCase ? (profilesMap[paymentsCase.specialist_id] || "") : ""}
+        currentUserId={user.id}
+      />
+
     </Card>
   );
 }
