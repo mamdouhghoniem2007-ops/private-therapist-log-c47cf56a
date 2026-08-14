@@ -14,6 +14,8 @@ export function formatAppointmentMessage(opts: {
   durationMinutes?: number | null;
   specialistName?: string | null;
   sessionKindLabel?: string | null;
+  cost?: number | null;
+  discountPercentage?: number | null;
 }): string {
   const d = new Date(opts.date);
   const dateTxt = isNaN(d.getTime())
@@ -31,7 +33,21 @@ export function formatAppointmentMessage(opts: {
   ];
   if (opts.specialistName) lines.push(`👤 *الأخصائي:* ${opts.specialistName}`);
   if (opts.durationMinutes) lines.push(`⏱️ *مدة الجلسة:* ${opts.durationMinutes} دقيقة`);
-  if (opts.sessionKindLabel) lines.push(`📌 *نوع الجلسة:* ${opts.sessionKindLabel}`);
+  lines.push(`📌 *نوع الجلسة:* ${opts.sessionKindLabel || "جلسة"}`);
+
+  const cost = Number(opts.cost ?? 0);
+  const disc = Number(opts.discountPercentage ?? 0);
+  if (cost > 0) {
+    const net = Math.round(cost * (1 - disc / 100) * 100) / 100;
+    if (disc > 0) {
+      lines.push(`💰 *السعر:* ${cost} ج`);
+      lines.push(`🏷️ *الخصم:* ${disc}%`);
+      lines.push(`✅ *المبلغ المستحق:* ${net} ج`);
+    } else {
+      lines.push(`💰 *السعر:* ${net} ج`);
+    }
+  }
+
   lines.push(
     "",
     `🔔 *نرجو الالتزام بالموعد المحدد، حيث إن أي تأخير يؤثر على باقي الحالات المقررة خلال اليوم.*`,
@@ -41,6 +57,7 @@ export function formatAppointmentMessage(opts: {
   );
   return lines.join("\n");
 }
+
 
 export function formatAbsenceWarningMessage(opts: {
   caseName: string;
