@@ -223,8 +223,8 @@ export function QuickAppointmentDialog({
         specialist_percentage: payload.specialist_percentage,
         discount_percentage: payload.discount_percentage,
         payment_type: payload.payment_type,
-        session_type: null,
-        test_type: null,
+        session_type: payload.session_type,
+        test_type: payload.test_type,
         notes: payload.notes,
       });
     }
