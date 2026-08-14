@@ -50,6 +50,9 @@ export type AppointmentLite = {
   status: string;
   notes: string | null;
   case_whatsapp: string | null;
+  session_kind?: string | null;
+  session_type?: string | null;
+  test_type?: string | null;
 };
 
 type Props = {
