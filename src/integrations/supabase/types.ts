@@ -123,6 +123,8 @@ export type Database = {
         Row: {
           active: boolean
           archived: boolean
+          counter_base_number: number
+          counter_start_date: string
           created_at: string
           created_by: string | null
           default_cost: number
@@ -137,6 +139,7 @@ export type Database = {
           payment_type: string
           recurring_days: number[]
           recurring_time: string
+          sessions_per_cycle: number
           specialist_id: string
           start_date: string
           updated_at: string
@@ -145,6 +148,8 @@ export type Database = {
         Insert: {
           active?: boolean
           archived?: boolean
+          counter_base_number?: number
+          counter_start_date?: string
           created_at?: string
           created_by?: string | null
           default_cost?: number
@@ -159,6 +164,7 @@ export type Database = {
           payment_type?: string
           recurring_days?: number[]
           recurring_time: string
+          sessions_per_cycle?: number
           specialist_id: string
           start_date?: string
           updated_at?: string
@@ -167,6 +173,8 @@ export type Database = {
         Update: {
           active?: boolean
           archived?: boolean
+          counter_base_number?: number
+          counter_start_date?: string
           created_at?: string
           created_by?: string | null
           default_cost?: number
@@ -181,6 +189,7 @@ export type Database = {
           payment_type?: string
           recurring_days?: number[]
           recurring_time?: string
+          sessions_per_cycle?: number
           specialist_id?: string
           start_date?: string
           updated_at?: string
