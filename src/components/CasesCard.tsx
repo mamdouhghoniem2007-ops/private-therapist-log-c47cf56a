@@ -52,6 +52,9 @@ type CaseRow = {
   notes: string | null;
   payment_type: string;
   discount_percentage: number;
+  counter_base_number: number;
+  counter_start_date: string;
+  sessions_per_cycle: number;
 };
 
 const PAYMENT_TYPE_OPTIONS = [
