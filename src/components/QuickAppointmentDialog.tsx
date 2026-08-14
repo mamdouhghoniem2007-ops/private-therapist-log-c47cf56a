@@ -10,6 +10,18 @@ import { toast } from "sonner";
 
 type Profile = { id: string; full_name: string };
 
+const KIND_OPTIONS: { value: string; label: string }[] = [
+  { value: "regular", label: "جلسة عادية" },
+  { value: "assessment", label: "تقييم" },
+  { value: "test", label: "اختبار" },
+];
+const SUBTYPES: Record<string, string[]> = {
+  regular: ["تخاطب", "تنمية مهارات", "تعديل سلوك", "تأهيل", "تأسيس أكاديمي", "صعوبات تعلم", "علاج وظيفي"],
+  assessment: ["تقييم مبدئي", "تقييم دوري"],
+  test: ["IQ ستانفورد بينيه", "وكسلر للأطفال", "ADHD - فرط الحركة وتشتت الانتباه", "التوحد CARS", "مقياس فاينلاند", "أخرى"],
+};
+
+
 type CaseRow = {
   id: string;
   name: string;
