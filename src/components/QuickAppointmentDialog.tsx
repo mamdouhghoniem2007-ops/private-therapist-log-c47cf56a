@@ -10,6 +10,18 @@ import { toast } from "sonner";
 
 type Profile = { id: string; full_name: string };
 
+const KIND_OPTIONS: { value: string; label: string }[] = [
+  { value: "regular", label: "جلسة عادية" },
+  { value: "assessment", label: "تقييم" },
+  { value: "test", label: "اختبار" },
+];
+const SUBTYPES: Record<string, string[]> = {
+  regular: ["تخاطب", "تنمية مهارات", "تعديل سلوك", "تأهيل", "تأسيس أكاديمي", "صعوبات تعلم", "علاج وظيفي"],
+  assessment: ["تقييم مبدئي", "تقييم دوري"],
+  test: ["IQ ستانفورد بينيه", "وكسلر للأطفال", "ADHD - فرط الحركة وتشتت الانتباه", "التوحد CARS", "مقياس فاينلاند", "أخرى"],
+};
+
+
 type CaseRow = {
   id: string;
   name: string;
@@ -38,6 +50,9 @@ export type AppointmentLite = {
   status: string;
   notes: string | null;
   case_whatsapp: string | null;
+  session_kind?: string | null;
+  session_type?: string | null;
+  test_type?: string | null;
 };
 
 type Props = {
@@ -74,7 +89,10 @@ export function QuickAppointmentDialog({
   const [percentage, setPercentage] = useState<number>(50);
   const [notes, setNotes] = useState<string>("");
   const [status, setStatus] = useState<string>("scheduled");
+  const [sessionKind, setSessionKind] = useState<string>("regular");
+  const [subtype, setSubtype] = useState<string>("");
   const [saving, setSaving] = useState(false);
+
 
   // Load cases on open
   useEffect(() => {
@@ -106,6 +124,8 @@ export function QuickAppointmentDialog({
       setPercentage(Number(appointment.specialist_percentage) || 50);
       setNotes(appointment.notes || "");
       setStatus(appointment.status);
+      setSessionKind(appointment.session_kind || "regular");
+      setSubtype(appointment.test_type || appointment.session_type || "");
     } else {
       setSpecialistId(preset?.specialistId || "");
       setCaseId("");
@@ -118,6 +138,8 @@ export function QuickAppointmentDialog({
       setPercentage(50);
       setNotes("");
       setStatus(attendedByDefault ? "attended" : "scheduled");
+      setSessionKind("regular");
+      setSubtype("");
     }
   }, [open, appointment, preset, attendedByDefault]);
 
@@ -158,7 +180,9 @@ export function QuickAppointmentDialog({
       specialist_percentage: percentage,
       discount_percentage: c ? Number(c.discount_percentage) || 0 : 0,
       payment_type: c?.payment_type || "per_session",
-      session_kind: "regular",
+      session_kind: sessionKind,
+      session_type: sessionKind === "test" ? null : (subtype || null),
+      test_type: sessionKind === "test" ? (subtype || null) : null,
       status,
       notes: notes.trim() || null,
     };
@@ -199,8 +223,8 @@ export function QuickAppointmentDialog({
         specialist_percentage: payload.specialist_percentage,
         discount_percentage: payload.discount_percentage,
         payment_type: payload.payment_type,
-        session_type: null,
-        test_type: null,
+        session_type: payload.session_type,
+        test_type: payload.test_type,
         notes: payload.notes,
       });
     }
@@ -263,6 +287,28 @@ export function QuickAppointmentDialog({
               />
             </div>
           )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>نوع الجلسة</Label>
+              <Select value={sessionKind} onValueChange={(v) => { setSessionKind(v); setSubtype(""); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {KIND_OPTIONS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>التفصيل</Label>
+              <Select value={subtype || "__none__"} onValueChange={(v) => setSubtype(v === "__none__" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="اختياري" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">بدون تحديد</SelectItem>
+                  {(SUBTYPES[sessionKind] || []).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
 
           <div className="grid grid-cols-2 gap-3">

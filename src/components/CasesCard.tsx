@@ -1009,7 +1009,9 @@ export function CasesCard({
                             time: next.scheduled_time,
                             durationMinutes: c.default_duration_minutes,
                             specialistName: profilesMap[c.specialist_id] || null,
-                            sessionKindLabel: next.session_kind !== "regular" ? KIND_LABEL[next.session_kind] : null,
+                            cost: c.default_cost,
+                            discountPercentage: c.discount_percentage,
+                            sessionKindLabel: KIND_LABEL[next.session_kind] || "جلسة",
                           })
                         : `السلام عليكم، بخصوص جلسات "${c.name}" — مركز رعاية.`;
                       const link = waLink(c.whatsapp, msg);
