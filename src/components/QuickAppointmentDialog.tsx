@@ -180,7 +180,9 @@ export function QuickAppointmentDialog({
       specialist_percentage: percentage,
       discount_percentage: c ? Number(c.discount_percentage) || 0 : 0,
       payment_type: c?.payment_type || "per_session",
-      session_kind: "regular",
+      session_kind: sessionKind,
+      session_type: sessionKind === "test" ? null : (subtype || null),
+      test_type: sessionKind === "test" ? (subtype || null) : null,
       status,
       notes: notes.trim() || null,
     };
