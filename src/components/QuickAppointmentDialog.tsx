@@ -89,7 +89,10 @@ export function QuickAppointmentDialog({
   const [percentage, setPercentage] = useState<number>(50);
   const [notes, setNotes] = useState<string>("");
   const [status, setStatus] = useState<string>("scheduled");
+  const [sessionKind, setSessionKind] = useState<string>("regular");
+  const [subtype, setSubtype] = useState<string>("");
   const [saving, setSaving] = useState(false);
+
 
   // Load cases on open
   useEffect(() => {
