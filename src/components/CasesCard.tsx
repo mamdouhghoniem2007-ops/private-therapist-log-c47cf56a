@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText, PlayCircle, Pause, Play, Sparkles, Archive, ArchiveRestore, Wallet } from "lucide-react";
+import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, MessageCircle, Pencil, X, Save, FileText, PlayCircle, Pause, Play, Sparkles, Archive, ArchiveRestore, Wallet, ClipboardList } from "lucide-react";
 import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 import { fmtTime12 } from "@/lib/utils";
 import { SlotSuggestionsDialog, type Suggestion } from "./SlotSuggestionsDialog";
@@ -120,6 +120,18 @@ export function CasesCard({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<CaseRow | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [cycleCounts, setCycleCounts] = useState<Record<string, number>>({});
+
+  // حساب موضع الجلسة الحالية داخل الدورة (مثال: الجلسة 6 من 8)
+  const cycleInfo = (c: CaseRow) => {
+    const per = Math.max(1, Number(c.sessions_per_cycle) || 8);
+    const base = Math.max(1, Number(c.counter_base_number) || 1);
+    const attended = cycleCounts[c.id] || 0;
+    const total = base - 1 + attended; // إجمالي الجلسات المحسوبة
+    const current = total === 0 ? 0 : ((total - 1) % per) + 1;
+    const remaining = total === 0 ? per : per - current;
+    return { per, total, current, remaining, done: total > 0 && current === per };
+  };
 
   const startEdit = (c: CaseRow) => {
     setEditingId(c.id);
@@ -157,6 +169,9 @@ export function CasesCard({
       payment_type: editDraft.payment_type || "per_session",
       discount_percentage: Number(editDraft.discount_percentage) || 0,
       start_date: editDraft.start_date,
+      counter_base_number: Math.max(1, Number(editDraft.counter_base_number) || 1),
+      counter_start_date: editDraft.counter_start_date || editDraft.start_date,
+      sessions_per_cycle: Math.max(1, Number(editDraft.sessions_per_cycle) || 8),
       notes: editDraft.notes,
     }).eq("id", editDraft.id);
     setSavingEdit(false);
@@ -506,6 +521,92 @@ export function CasesCard({
 
   const [submitting, setSubmitting] = useState(false);
 
+  // كارت المتابعة — جلسات مرقّمة حسب الدورة
+  const openFollowUpCard = async (c: CaseRow) => {
+    const info = cycleInfo(c);
+    const from = c.counter_start_date || c.start_date;
+    const todayStr = today();
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("scheduled_date, scheduled_time, duration_minutes, session_kind, session_type, test_type, status, notes")
+      .eq("case_id", c.id)
+      .gte("scheduled_date", from)
+      .lte("scheduled_date", todayStr)
+      .order("scheduled_date", { ascending: true })
+      .order("scheduled_time", { ascending: true });
+    if (error) { toast.error(error.message); return; }
+    const rows = (data as any[]) || [];
+    const per = info.per;
+    const base = Math.max(1, Number(c.counter_base_number) || 1);
+    let n = base - 1;
+    const statusLabel = (s: string) =>
+      s === "attended" ? "حضر" : s === "apologized" ? "اعتذار" : s === "absent" ? "غياب" : s === "cancelled" ? "ملغي" : "مجدول";
+    const body = rows.map((r) => {
+      let numCell = "—";
+      let cls = "";
+      if (r.status === "attended") {
+        n += 1;
+        const pos = ((n - 1) % per) + 1;
+        numCell = `${pos} / ${per}`;
+        cls = pos === per ? "cycle-end" : "ok";
+      } else if (r.status === "absent") cls = "bad";
+      else if (r.status === "apologized") cls = "warn";
+      const kind = r.test_type || r.session_type || KIND_LABEL[r.session_kind] || "جلسة";
+      return `<tr class="${cls}">
+        <td>${numCell}</td>
+        <td>${r.scheduled_date}</td>
+        <td>${fmtTime12(r.scheduled_time)}</td>
+        <td>${kind}</td>
+        <td>${statusLabel(r.status)}</td>
+        <td style="text-align:right">${(r.notes || "").replace(/</g, "&lt;")}</td>
+      </tr>`;
+    }).join("");
+
+    const headers = ["رقم الجلسة", "التاريخ", "الوقت", "النوع", "الحالة", "ملاحظات"];
+    const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+    <title>كارت متابعة - ${c.name}</title>
+    <style>
+      body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:22px;color:#111}
+      h1{margin:0 0 4px;font-size:20px}
+      .meta{color:#555;font-size:12px;margin-bottom:10px}
+      .summary{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 14px}
+      .chip{padding:8px 12px;border:1px solid #ccc;border-radius:8px;font-size:13px;background:#fafafa}
+      .chip b{font-size:15px;margin-inline-start:6px}
+      .alert{padding:10px 12px;border-radius:8px;background:#fff4e5;border:1px solid #f0b429;font-size:13px;margin-bottom:12px}
+      table{width:100%;border-collapse:collapse;font-size:12px}
+      th,td{border:1px solid #999;padding:6px 7px;text-align:center;vertical-align:top}
+      thead{background:#f0f0f0}
+      tr.ok{background:#effaf0} tr.warn{background:#fff7e6} tr.bad{background:#fdecec}
+      tr.cycle-end{background:#e6f0ff;font-weight:bold}
+      .toolbar{margin:0 0 14px}
+      .toolbar button{padding:8px 14px;font-size:13px;border:1px solid #888;border-radius:6px;background:#fafafa;cursor:pointer}
+      @media print { .noprint{display:none} body{padding:10px} }
+    </style></head><body>
+    <h1>كارت متابعة — ${c.name}</h1>
+    <div class="meta">
+      الأخصائي: ${profilesMap[c.specialist_id] || "—"} ·
+      بداية العد: ${from} (من الجلسة رقم ${base}) ·
+      دورة كل ${per} جلسات ·
+      تاريخ الطباعة: ${new Date().toLocaleString("ar-EG")}
+    </div>
+    ${info.done ? `<div class="alert">🔔 هذا الطفل أكمل ${per} جلسات — انتهت جلسات الدورة الحالية.</div>` : ""}
+    <div class="summary">
+      <div class="chip">الجلسة الحالية <b>${info.current || 0} من ${per}</b></div>
+      <div class="chip">المتبقي في الدورة <b>${info.remaining}</b></div>
+      <div class="chip">إجمالي الجلسات المحضورة <b>${info.total}</b></div>
+    </div>
+    <div class="toolbar noprint"><button onclick="window.print()">طباعة</button></div>
+    <table>
+      <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${body || `<tr><td colspan="${headers.length}">لا توجد جلسات بعد تاريخ بداية العد</td></tr>`}</tbody>
+    </table>
+    </body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) { toast.error("فشل فتح النافذة — تأكد من السماح بالنوافذ المنبثقة"); return; }
+    w.document.write(html);
+    w.document.close();
+  };
+
   // Quick-log session dialog
   const [logCase, setLogCase] = useState<CaseRow | null>(null);
   const [logNotes, setLogNotes] = useState("");
@@ -619,8 +720,27 @@ export function CasesCard({
     const { data, error } = await supabase
       .from("cases").select("*").order("created_at", { ascending: false });
     if (error) toast.error(error.message);
-    setCases((data as CaseRow[]) || []);
+    const list = (data as CaseRow[]) || [];
+    setCases(list);
     setLoading(false);
+    // عدّاد الجلسات المحضورة لكل حالة اعتبارًا من تاريخ بداية العد
+    if (list.length) {
+      const { data: aData } = await supabase
+        .from("appointments")
+        .select("case_id, scheduled_date")
+        .in("case_id", list.map((c) => c.id))
+        .eq("status", "attended");
+      const startById: Record<string, string> = {};
+      list.forEach((c) => { startById[c.id] = c.counter_start_date; });
+      const map: Record<string, number> = {};
+      ((aData as any[]) || []).forEach((r) => {
+        if (!r.case_id) return;
+        const s = startById[r.case_id];
+        if (s && r.scheduled_date < s) return;
+        map[r.case_id] = (map[r.case_id] || 0) + 1;
+      });
+      setCycleCounts(map);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -942,6 +1062,23 @@ export function CasesCard({
                       <span className="text-[10px] rounded bg-primary/10 text-primary px-1.5 py-0.5">
                         {KIND_OPTIONS.find((k) => k.value === (c.default_session_kind || "regular"))?.label}
                       </span>
+                      {(() => {
+                        const info = cycleInfo(c);
+                        return (
+                          <span
+                            className={`text-[10px] rounded px-1.5 py-0.5 border font-medium ${
+                              info.done
+                                ? "bg-amber-500/15 text-amber-700 border-amber-500/40"
+                                : "bg-sky-500/10 text-sky-700 border-sky-500/30"
+                            }`}
+                            title="عدّاد جلسات الدورة"
+                          >
+                            {info.done
+                              ? `خلص جلسات الدورة (${info.per}/${info.per}) 🔔`
+                              : `الجلسة ${info.current || 0} من ${info.per} — فاضل ${info.remaining}`}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {c.recurring_days.map((d) => DAY_LABELS[d]).join("، ") || "—"}
@@ -968,6 +1105,10 @@ export function CasesCard({
                     <Button size="sm" variant="outline" onClick={() => openCaseLog(c)} title="السجل التراكمي لكل الجلسات السابقة">
                       <FileText className="h-4 w-4 ml-1" />
                       السجل
+                    </Button>
+                    <Button size="sm" variant="outline" className="border-sky-500/50 text-sky-700 hover:bg-sky-500/10" onClick={() => openFollowUpCard(c)} title="كارت متابعة مطبوع بترقيم الجلسات">
+                      <ClipboardList className="h-4 w-4 ml-1" />
+                      كارت المتابعة
                     </Button>
                     {canSeeFinancial && (
                       <Button size="sm" variant="outline" onClick={() => openAttendanceSheet(c)} title="شيت الحضور والمدفوعات من 1 يونيو 2026">
@@ -1198,6 +1339,31 @@ export function CasesCard({
                       />
                     </div>
                     )}
+
+                    <div className="space-y-1.5">
+                      <Label>رقم أول جلسة (بداية العد)</Label>
+                      <Input
+                        type="number" min={1} step={1}
+                        value={editDraft.counter_base_number ?? 1}
+                        onChange={(e) => setEditDraft({ ...editDraft, counter_base_number: e.target.value === "" ? 1 : +e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>تاريخ بداية العد</Label>
+                      <Input
+                        type="date"
+                        value={editDraft.counter_start_date ?? editDraft.start_date}
+                        onChange={(e) => setEditDraft({ ...editDraft, counter_start_date: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>عدد جلسات الدورة</Label>
+                      <Input
+                        type="number" min={1} step={1}
+                        value={editDraft.sessions_per_cycle ?? 8}
+                        onChange={(e) => setEditDraft({ ...editDraft, sessions_per_cycle: e.target.value === "" ? 8 : +e.target.value })}
+                      />
+                    </div>
 
 
                     <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
