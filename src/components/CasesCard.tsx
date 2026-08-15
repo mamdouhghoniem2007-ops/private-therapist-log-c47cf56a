@@ -1233,6 +1233,31 @@ export function CasesCard({
                     </div>
                     )}
 
+                    <div className="space-y-1.5">
+                      <Label>رقم أول جلسة (بداية العد)</Label>
+                      <Input
+                        type="number" min={1} step={1}
+                        value={editDraft.counter_base_number ?? 1}
+                        onChange={(e) => setEditDraft({ ...editDraft, counter_base_number: e.target.value === "" ? 1 : +e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>تاريخ بداية العد</Label>
+                      <Input
+                        type="date"
+                        value={editDraft.counter_start_date ?? editDraft.start_date}
+                        onChange={(e) => setEditDraft({ ...editDraft, counter_start_date: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>عدد جلسات الدورة</Label>
+                      <Input
+                        type="number" min={1} step={1}
+                        value={editDraft.sessions_per_cycle ?? 8}
+                        onChange={(e) => setEditDraft({ ...editDraft, sessions_per_cycle: e.target.value === "" ? 8 : +e.target.value })}
+                      />
+                    </div>
+
 
                     <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
                       <Label>ملاحظات</Label>
