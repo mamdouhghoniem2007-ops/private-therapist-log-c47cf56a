@@ -1062,6 +1062,23 @@ export function CasesCard({
                       <span className="text-[10px] rounded bg-primary/10 text-primary px-1.5 py-0.5">
                         {KIND_OPTIONS.find((k) => k.value === (c.default_session_kind || "regular"))?.label}
                       </span>
+                      {(() => {
+                        const info = cycleInfo(c);
+                        return (
+                          <span
+                            className={`text-[10px] rounded px-1.5 py-0.5 border font-medium ${
+                              info.done
+                                ? "bg-amber-500/15 text-amber-700 border-amber-500/40"
+                                : "bg-sky-500/10 text-sky-700 border-sky-500/30"
+                            }`}
+                            title="عدّاد جلسات الدورة"
+                          >
+                            {info.done
+                              ? `خلص جلسات الدورة (${info.per}/${info.per}) 🔔`
+                              : `الجلسة ${info.current || 0} من ${info.per} — فاضل ${info.remaining}`}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {c.recurring_days.map((d) => DAY_LABELS[d]).join("، ") || "—"}
