@@ -521,6 +521,92 @@ export function CasesCard({
 
   const [submitting, setSubmitting] = useState(false);
 
+  // كارت المتابعة — جلسات مرقّمة حسب الدورة
+  const openFollowUpCard = async (c: CaseRow) => {
+    const info = cycleInfo(c);
+    const from = c.counter_start_date || c.start_date;
+    const todayStr = today();
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("scheduled_date, scheduled_time, duration_minutes, session_kind, session_type, test_type, status, notes")
+      .eq("case_id", c.id)
+      .gte("scheduled_date", from)
+      .lte("scheduled_date", todayStr)
+      .order("scheduled_date", { ascending: true })
+      .order("scheduled_time", { ascending: true });
+    if (error) { toast.error(error.message); return; }
+    const rows = (data as any[]) || [];
+    const per = info.per;
+    const base = Math.max(1, Number(c.counter_base_number) || 1);
+    let n = base - 1;
+    const statusLabel = (s: string) =>
+      s === "attended" ? "حضر" : s === "apologized" ? "اعتذار" : s === "absent" ? "غياب" : s === "cancelled" ? "ملغي" : "مجدول";
+    const body = rows.map((r) => {
+      let numCell = "—";
+      let cls = "";
+      if (r.status === "attended") {
+        n += 1;
+        const pos = ((n - 1) % per) + 1;
+        numCell = `${pos} / ${per}`;
+        cls = pos === per ? "cycle-end" : "ok";
+      } else if (r.status === "absent") cls = "bad";
+      else if (r.status === "apologized") cls = "warn";
+      const kind = r.test_type || r.session_type || KIND_LABEL[r.session_kind] || "جلسة";
+      return `<tr class="${cls}">
+        <td>${numCell}</td>
+        <td>${r.scheduled_date}</td>
+        <td>${fmtTime12(r.scheduled_time)}</td>
+        <td>${kind}</td>
+        <td>${statusLabel(r.status)}</td>
+        <td style="text-align:right">${(r.notes || "").replace(/</g, "&lt;")}</td>
+      </tr>`;
+    }).join("");
+
+    const headers = ["رقم الجلسة", "التاريخ", "الوقت", "النوع", "الحالة", "ملاحظات"];
+    const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+    <title>كارت متابعة - ${c.name}</title>
+    <style>
+      body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:22px;color:#111}
+      h1{margin:0 0 4px;font-size:20px}
+      .meta{color:#555;font-size:12px;margin-bottom:10px}
+      .summary{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 14px}
+      .chip{padding:8px 12px;border:1px solid #ccc;border-radius:8px;font-size:13px;background:#fafafa}
+      .chip b{font-size:15px;margin-inline-start:6px}
+      .alert{padding:10px 12px;border-radius:8px;background:#fff4e5;border:1px solid #f0b429;font-size:13px;margin-bottom:12px}
+      table{width:100%;border-collapse:collapse;font-size:12px}
+      th,td{border:1px solid #999;padding:6px 7px;text-align:center;vertical-align:top}
+      thead{background:#f0f0f0}
+      tr.ok{background:#effaf0} tr.warn{background:#fff7e6} tr.bad{background:#fdecec}
+      tr.cycle-end{background:#e6f0ff;font-weight:bold}
+      .toolbar{margin:0 0 14px}
+      .toolbar button{padding:8px 14px;font-size:13px;border:1px solid #888;border-radius:6px;background:#fafafa;cursor:pointer}
+      @media print { .noprint{display:none} body{padding:10px} }
+    </style></head><body>
+    <h1>كارت متابعة — ${c.name}</h1>
+    <div class="meta">
+      الأخصائي: ${profilesMap[c.specialist_id] || "—"} ·
+      بداية العد: ${from} (من الجلسة رقم ${base}) ·
+      دورة كل ${per} جلسات ·
+      تاريخ الطباعة: ${new Date().toLocaleString("ar-EG")}
+    </div>
+    ${info.done ? `<div class="alert">🔔 هذا الطفل أكمل ${per} جلسات — انتهت جلسات الدورة الحالية.</div>` : ""}
+    <div class="summary">
+      <div class="chip">الجلسة الحالية <b>${info.current || 0} من ${per}</b></div>
+      <div class="chip">المتبقي في الدورة <b>${info.remaining}</b></div>
+      <div class="chip">إجمالي الجلسات المحضورة <b>${info.total}</b></div>
+    </div>
+    <div class="toolbar noprint"><button onclick="window.print()">طباعة</button></div>
+    <table>
+      <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${body || `<tr><td colspan="${headers.length}">لا توجد جلسات بعد تاريخ بداية العد</td></tr>`}</tbody>
+    </table>
+    </body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) { toast.error("فشل فتح النافذة — تأكد من السماح بالنوافذ المنبثقة"); return; }
+    w.document.write(html);
+    w.document.close();
+  };
+
   // Quick-log session dialog
   const [logCase, setLogCase] = useState<CaseRow | null>(null);
   const [logNotes, setLogNotes] = useState("");
