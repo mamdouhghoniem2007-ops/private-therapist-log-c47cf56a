@@ -619,8 +619,27 @@ export function CasesCard({
     const { data, error } = await supabase
       .from("cases").select("*").order("created_at", { ascending: false });
     if (error) toast.error(error.message);
-    setCases((data as CaseRow[]) || []);
+    const list = (data as CaseRow[]) || [];
+    setCases(list);
     setLoading(false);
+    // عدّاد الجلسات المحضورة لكل حالة اعتبارًا من تاريخ بداية العد
+    if (list.length) {
+      const { data: aData } = await supabase
+        .from("appointments")
+        .select("case_id, scheduled_date")
+        .in("case_id", list.map((c) => c.id))
+        .eq("status", "attended");
+      const startById: Record<string, string> = {};
+      list.forEach((c) => { startById[c.id] = c.counter_start_date; });
+      const map: Record<string, number> = {};
+      ((aData as any[]) || []).forEach((r) => {
+        if (!r.case_id) return;
+        const s = startById[r.case_id];
+        if (s && r.scheduled_date < s) return;
+        map[r.case_id] = (map[r.case_id] || 0) + 1;
+      });
+      setCycleCounts(map);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
