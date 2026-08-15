@@ -169,6 +169,9 @@ export function CasesCard({
       payment_type: editDraft.payment_type || "per_session",
       discount_percentage: Number(editDraft.discount_percentage) || 0,
       start_date: editDraft.start_date,
+      counter_base_number: Math.max(1, Number(editDraft.counter_base_number) || 1),
+      counter_start_date: editDraft.counter_start_date || editDraft.start_date,
+      sessions_per_cycle: Math.max(1, Number(editDraft.sessions_per_cycle) || 8),
       notes: editDraft.notes,
     }).eq("id", editDraft.id);
     setSavingEdit(false);
