@@ -1106,6 +1106,10 @@ export function CasesCard({
                       <FileText className="h-4 w-4 ml-1" />
                       السجل
                     </Button>
+                    <Button size="sm" variant="outline" className="border-sky-500/50 text-sky-700 hover:bg-sky-500/10" onClick={() => openFollowUpCard(c)} title="كارت متابعة مطبوع بترقيم الجلسات">
+                      <ClipboardList className="h-4 w-4 ml-1" />
+                      كارت المتابعة
+                    </Button>
                     {canSeeFinancial && (
                       <Button size="sm" variant="outline" onClick={() => openAttendanceSheet(c)} title="شيت الحضور والمدفوعات من 1 يونيو 2026">
                         <FileText className="h-4 w-4 ml-1" />
