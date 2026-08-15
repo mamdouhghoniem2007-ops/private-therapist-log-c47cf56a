@@ -120,6 +120,18 @@ export function CasesCard({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<CaseRow | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [cycleCounts, setCycleCounts] = useState<Record<string, number>>({});
+
+  // حساب موضع الجلسة الحالية داخل الدورة (مثال: الجلسة 6 من 8)
+  const cycleInfo = (c: CaseRow) => {
+    const per = Math.max(1, Number(c.sessions_per_cycle) || 8);
+    const base = Math.max(1, Number(c.counter_base_number) || 1);
+    const attended = cycleCounts[c.id] || 0;
+    const total = base - 1 + attended; // إجمالي الجلسات المحسوبة
+    const current = total === 0 ? 0 : ((total - 1) % per) + 1;
+    const remaining = total === 0 ? per : per - current;
+    return { per, total, current, remaining, done: total > 0 && current === per };
+  };
 
   const startEdit = (c: CaseRow) => {
     setEditingId(c.id);
