@@ -15,6 +15,8 @@ import { fmtTime12 } from "@/lib/utils";
 import logo from "@/assets/logo.png.asset.json";
 import { AttendanceCard } from "@/components/AttendanceCard";
 import { CasesCard } from "@/components/CasesCard";
+import { CaseStudiesCard } from "@/components/CaseStudiesCard";
+
 import { EmployeesCard } from "@/components/EmployeesCard";
 import { SpecialistsAdminCard } from "@/components/SpecialistsAdminCard";
 import { WeeklyScheduleGrid } from "@/components/WeeklyScheduleGrid";
