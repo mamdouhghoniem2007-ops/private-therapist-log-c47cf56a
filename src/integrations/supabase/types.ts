@@ -119,6 +119,50 @@ export type Database = {
         }
         Relationships: []
       }
+      case_studies: {
+        Row: {
+          case_id: string | null
+          child_name: string
+          created_at: string
+          created_by: string | null
+          data: Json
+          id: string
+          specialist_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          case_id?: string | null
+          child_name: string
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          specialist_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string | null
+          child_name?: string
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          specialist_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_studies_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cases: {
         Row: {
           active: boolean
