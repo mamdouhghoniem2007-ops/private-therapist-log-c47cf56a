@@ -15,6 +15,8 @@ import { fmtTime12 } from "@/lib/utils";
 import logo from "@/assets/logo.png.asset.json";
 import { AttendanceCard } from "@/components/AttendanceCard";
 import { CasesCard } from "@/components/CasesCard";
+import { CaseStudiesCard } from "@/components/CaseStudiesCard";
+
 import { EmployeesCard } from "@/components/EmployeesCard";
 import { SpecialistsAdminCard } from "@/components/SpecialistsAdminCard";
 import { WeeklyScheduleGrid } from "@/components/WeeklyScheduleGrid";
@@ -1190,6 +1192,10 @@ export function Dashboard({ user }: { user: User }) {
         {/* Attendance — all roles */}
         {/* Cases — admin/supervisor manage, specialists see own */}
         <CasesCard user={user} role={role} specialists={specialists} profilesMap={profilesMap} />
+
+        {/* Case studies — دراسات الحالة */}
+        <CaseStudiesCard user={user} role={role} specialists={specialists} profilesMap={profilesMap} />
+
 
         {/* Attendance — all roles */}
         <AttendanceCard user={user} role={role} profilesMap={profilesMap} allRoles={allRoles} />
