@@ -167,6 +167,7 @@ export type Database = {
         Row: {
           active: boolean
           archived: boolean
+          birth_date: string | null
           counter_base_number: number
           counter_start_date: string
           created_at: string
@@ -192,6 +193,7 @@ export type Database = {
         Insert: {
           active?: boolean
           archived?: boolean
+          birth_date?: string | null
           counter_base_number?: number
           counter_start_date?: string
           created_at?: string
@@ -217,6 +219,7 @@ export type Database = {
         Update: {
           active?: boolean
           archived?: boolean
+          birth_date?: string | null
           counter_base_number?: number
           counter_start_date?: string
           created_at?: string
