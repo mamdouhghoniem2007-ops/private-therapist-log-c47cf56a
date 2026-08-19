@@ -16,6 +16,7 @@ import logo from "@/assets/logo.png.asset.json";
 import { AttendanceCard } from "@/components/AttendanceCard";
 import { CasesCard } from "@/components/CasesCard";
 import { CaseStudiesCard } from "@/components/CaseStudiesCard";
+import { BirthdaysCard } from "@/components/BirthdaysCard";
 
 import { EmployeesCard } from "@/components/EmployeesCard";
 import { SpecialistsAdminCard } from "@/components/SpecialistsAdminCard";
@@ -1191,6 +1192,8 @@ export function Dashboard({ user }: { user: User }) {
 
         {/* Attendance — all roles */}
         {/* Cases — admin/supervisor manage, specialists see own */}
+        <BirthdaysCard role={role} userId={user.id} profilesMap={profilesMap} />
+
         <CasesCard user={user} role={role} specialists={specialists} profilesMap={profilesMap} />
 
         {/* Case studies — دراسات الحالة */}

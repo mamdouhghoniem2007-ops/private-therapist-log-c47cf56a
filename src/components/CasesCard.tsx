@@ -38,6 +38,7 @@ type CaseRow = {
   id: string;
   name: string;
   whatsapp: string | null;
+  birth_date: string | null;
   specialist_id: string;
   recurring_days: number[];
   recurring_time: string;
@@ -158,6 +159,7 @@ export function CasesCard({
     const { error } = await supabase.from("cases").update({
       name: editDraft.name.trim(),
       whatsapp: editDraft.whatsapp?.trim() || null,
+      birth_date: editDraft.birth_date || null,
       specialist_id: editDraft.specialist_id,
       recurring_days: editDraft.recurring_days,
       recurring_time: editDraft.recurring_time,
@@ -506,6 +508,7 @@ export function CasesCard({
 
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [specialistId, setSpecialistId] = useState("");
   const [days, setDays] = useState<number[]>([]);
   const [time, setTime] = useState("16:00");
@@ -752,7 +755,7 @@ export function CasesCard({
   const toggleDay = (d: number) =>
     setDays((ds) => ds.includes(d) ? ds.filter((x) => x !== d) : [...ds, d].sort());
   const resetForm = () => {
-    setName(""); setWhatsapp(""); setDays([]); setCost(""); setCostSelect("");
+    setName(""); setWhatsapp(""); setBirthDate(""); setDays([]); setCost(""); setCostSelect("");
     setSessionKind("regular"); setSessionSubtype(defaultSubtypeFor("regular"));
     setPaymentType("per_session"); setDiscountPct("");
     setShowForm(false);
@@ -771,6 +774,7 @@ export function CasesCard({
     const { error } = await supabase.from("cases").insert({
       name: name.trim(),
       whatsapp: whatsapp.trim() || null,
+      birth_date: birthDate || null,
       specialist_id: specialistId,
       recurring_days: days,
       recurring_time: time,
@@ -903,6 +907,10 @@ export function CasesCard({
             <div className="space-y-1.5">
               <Label>تاريخ البدء</Label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>تاريخ ميلاد الطفل</Label>
+              <Input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
             </div>
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1219,6 +1227,10 @@ export function CasesCard({
                     <div className="space-y-1.5">
                       <Label>WhatsApp</Label>
                       <Input dir="ltr" value={editDraft.whatsapp ?? ""} onChange={(e) => setEditDraft({ ...editDraft, whatsapp: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>تاريخ ميلاد الطفل</Label>
+                      <Input type="date" value={editDraft.birth_date ?? ""} onChange={(e) => setEditDraft({ ...editDraft, birth_date: e.target.value })} />
                     </div>
                     <div className="space-y-1.5">
                       <Label>الأخصائي</Label>
