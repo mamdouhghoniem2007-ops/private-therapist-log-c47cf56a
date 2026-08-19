@@ -755,7 +755,7 @@ export function CasesCard({
   const toggleDay = (d: number) =>
     setDays((ds) => ds.includes(d) ? ds.filter((x) => x !== d) : [...ds, d].sort());
   const resetForm = () => {
-    setName(""); setWhatsapp(""); setDays([]); setCost(""); setCostSelect("");
+    setName(""); setWhatsapp(""); setBirthDate(""); setDays([]); setCost(""); setCostSelect("");
     setSessionKind("regular"); setSessionSubtype(defaultSubtypeFor("regular"));
     setPaymentType("per_session"); setDiscountPct("");
     setShowForm(false);
