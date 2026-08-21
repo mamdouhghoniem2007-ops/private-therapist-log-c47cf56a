@@ -1192,14 +1192,13 @@ export function Dashboard({ user }: { user: User }) {
           />
         )}
 
-        {/* Attendance — all roles */}
-        {/* Cases — admin/supervisor manage, specialists see own */}
+        {/* Case studies — دراسات الحالة */}
+        <CaseStudiesCard user={user} role={role} specialists={specialists} profilesMap={profilesMap} />
+
+        {/* أعياد الميلاد */}
         <BirthdaysCard role={role} userId={user.id} profilesMap={profilesMap} />
 
         <CasesCard user={user} role={role} specialists={specialists} profilesMap={profilesMap} />
-
-        {/* Case studies — دراسات الحالة */}
-        <CaseStudiesCard user={user} role={role} specialists={specialists} profilesMap={profilesMap} />
 
 
         {/* Attendance — all roles */}
