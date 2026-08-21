@@ -23,14 +23,16 @@ import { SpecialistsAdminCard } from "@/components/SpecialistsAdminCard";
 import { WeeklyScheduleGrid } from "@/components/WeeklyScheduleGrid";
 import { QuickAppointmentDialog, type AppointmentLite } from "@/components/QuickAppointmentDialog";
 
-type SessionKind = "regular" | "initial_assessment" | "test" | "periodic_assessment";
+type SessionKind = "regular" | "assessment" | "initial_assessment" | "test" | "periodic_assessment";
 const SESSION_KIND_LABEL: Record<SessionKind, string> = {
   regular: "جلسة عادية",
+  assessment: "تقييم",
   initial_assessment: "تقييم مبدئي",
   test: "اختبار",
   periodic_assessment: "تقييم دوري",
 };
-const SESSION_KINDS: SessionKind[] = ["regular", "initial_assessment", "test", "periodic_assessment"];
+const SESSION_KINDS: SessionKind[] = ["regular", "initial_assessment", "periodic_assessment", "test"];
+const kindLabel = (k?: string | null) => SESSION_KIND_LABEL[(k || "regular") as SessionKind] || "جلسة عادية";
 
 type Role = "admin" | "supervisor" | "specialist";
 
@@ -1316,7 +1318,7 @@ function AppointmentRow({
           {isAbsent && <span className="text-xs rounded bg-red-500/20 px-2 py-0.5 text-red-700 font-semibold">غائبة</span>}
           {a.session_kind && a.session_kind !== "regular" && (
             <span className="text-xs rounded bg-amber-500/15 px-2 py-0.5 text-amber-700 font-semibold">
-              {a.session_kind === "initial_assessment" ? "تقييم مبدئي" : a.session_kind === "test" ? "اختبار" : "تقييم دوري"}
+              {kindLabel(a.session_kind)}
             </span>
           )}
           {!isInactive && !isAttended && startedTxt && !endedTxt && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary font-semibold">جارية</span>}
@@ -1414,7 +1416,7 @@ function AppointmentRow({
           cost: a.cost,
           discountPercentage: a.discount_percentage,
           sessionKindLabel: a.test_type || a.session_type || (a.session_kind && a.session_kind !== "regular"
-            ? (a.session_kind === "initial_assessment" ? "تقييم مبدئي" : a.session_kind === "test" ? "اختبار" : "تقييم دوري")
+            ? kindLabel(a.session_kind)
             : "جلسة"),
         }));
         if (!link) return null;

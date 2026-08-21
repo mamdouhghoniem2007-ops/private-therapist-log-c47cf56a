@@ -124,8 +124,9 @@ export function QuickAppointmentDialog({
       setPercentage(Number(appointment.specialist_percentage) || 50);
       setNotes(appointment.notes || "");
       setStatus(appointment.status);
-      setSessionKind(appointment.session_kind || "regular");
-      setSubtype(appointment.test_type || appointment.session_type || "");
+      const k = appointment.session_kind || "regular";
+      setSessionKind(k === "initial_assessment" || k === "periodic_assessment" ? "assessment" : k);
+      setSubtype(appointment.test_type || appointment.session_type || (k === "periodic_assessment" ? "تقييم دوري" : k === "initial_assessment" ? "تقييم مبدئي" : ""));
     } else {
       setSpecialistId(preset?.specialistId || "");
       setCaseId("");
@@ -180,7 +181,10 @@ export function QuickAppointmentDialog({
       specialist_percentage: percentage,
       discount_percentage: c ? Number(c.discount_percentage) || 0 : 0,
       payment_type: c?.payment_type || "per_session",
-      session_kind: sessionKind,
+      session_kind:
+        sessionKind === "assessment"
+          ? (subtype === "تقييم دوري" ? "periodic_assessment" : "initial_assessment")
+          : sessionKind,
       session_type: sessionKind === "test" ? null : (subtype || null),
       test_type: sessionKind === "test" ? (subtype || null) : null,
       status,
@@ -299,7 +303,7 @@ export function QuickAppointmentDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>التفصيل</Label>
+              <Label>{sessionKind === "test" ? "نوع الاختبار" : sessionKind === "assessment" ? "نوع التقييم" : "التفصيل"}</Label>
               <Select value={subtype || "__none__"} onValueChange={(v) => setSubtype(v === "__none__" ? "" : v)}>
                 <SelectTrigger><SelectValue placeholder="اختياري" /></SelectTrigger>
                 <SelectContent>
