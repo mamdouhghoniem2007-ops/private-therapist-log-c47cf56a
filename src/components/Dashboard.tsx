@@ -1318,7 +1318,7 @@ function AppointmentRow({
           {isAbsent && <span className="text-xs rounded bg-red-500/20 px-2 py-0.5 text-red-700 font-semibold">غائبة</span>}
           {a.session_kind && a.session_kind !== "regular" && (
             <span className="text-xs rounded bg-amber-500/15 px-2 py-0.5 text-amber-700 font-semibold">
-              {a.session_kind === "initial_assessment" ? "تقييم مبدئي" : a.session_kind === "test" ? "اختبار" : "تقييم دوري"}
+              {kindLabel(a.session_kind)}
             </span>
           )}
           {!isInactive && !isAttended && startedTxt && !endedTxt && <span className="text-xs rounded bg-primary/15 px-2 py-0.5 text-primary font-semibold">جارية</span>}
