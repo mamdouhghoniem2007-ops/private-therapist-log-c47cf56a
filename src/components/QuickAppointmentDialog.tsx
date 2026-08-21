@@ -124,8 +124,9 @@ export function QuickAppointmentDialog({
       setPercentage(Number(appointment.specialist_percentage) || 50);
       setNotes(appointment.notes || "");
       setStatus(appointment.status);
-      setSessionKind(appointment.session_kind || "regular");
-      setSubtype(appointment.test_type || appointment.session_type || "");
+      const k = appointment.session_kind || "regular";
+      setSessionKind(k === "initial_assessment" || k === "periodic_assessment" ? "assessment" : k);
+      setSubtype(appointment.test_type || appointment.session_type || (k === "periodic_assessment" ? "تقييم دوري" : k === "initial_assessment" ? "تقييم مبدئي" : ""));
     } else {
       setSpecialistId(preset?.specialistId || "");
       setCaseId("");
