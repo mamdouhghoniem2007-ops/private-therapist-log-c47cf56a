@@ -1,0 +1,2 @@
+ALTER TABLE public.appointments DROP CONSTRAINT IF EXISTS appointments_session_kind_check;
+ALTER TABLE public.appointments ADD CONSTRAINT appointments_session_kind_check CHECK (session_kind = ANY (ARRAY['regular','assessment','initial_assessment','periodic_assessment','test']));
