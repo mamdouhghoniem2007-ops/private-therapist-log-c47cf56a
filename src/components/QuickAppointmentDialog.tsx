@@ -303,7 +303,7 @@ export function QuickAppointmentDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>التفصيل</Label>
+              <Label>{sessionKind === "test" ? "نوع الاختبار" : sessionKind === "assessment" ? "نوع التقييم" : "التفصيل"}</Label>
               <Select value={subtype || "__none__"} onValueChange={(v) => setSubtype(v === "__none__" ? "" : v)}>
                 <SelectTrigger><SelectValue placeholder="اختياري" /></SelectTrigger>
                 <SelectContent>
