@@ -23,14 +23,16 @@ import { SpecialistsAdminCard } from "@/components/SpecialistsAdminCard";
 import { WeeklyScheduleGrid } from "@/components/WeeklyScheduleGrid";
 import { QuickAppointmentDialog, type AppointmentLite } from "@/components/QuickAppointmentDialog";
 
-type SessionKind = "regular" | "initial_assessment" | "test" | "periodic_assessment";
+type SessionKind = "regular" | "assessment" | "initial_assessment" | "test" | "periodic_assessment";
 const SESSION_KIND_LABEL: Record<SessionKind, string> = {
   regular: "جلسة عادية",
+  assessment: "تقييم",
   initial_assessment: "تقييم مبدئي",
   test: "اختبار",
   periodic_assessment: "تقييم دوري",
 };
-const SESSION_KINDS: SessionKind[] = ["regular", "initial_assessment", "test", "periodic_assessment"];
+const SESSION_KINDS: SessionKind[] = ["regular", "initial_assessment", "periodic_assessment", "test"];
+const kindLabel = (k?: string | null) => SESSION_KIND_LABEL[(k || "regular") as SessionKind] || "جلسة عادية";
 
 type Role = "admin" | "supervisor" | "specialist";
 
