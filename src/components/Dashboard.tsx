@@ -1416,7 +1416,7 @@ function AppointmentRow({
           cost: a.cost,
           discountPercentage: a.discount_percentage,
           sessionKindLabel: a.test_type || a.session_type || (a.session_kind && a.session_kind !== "regular"
-            ? (a.session_kind === "initial_assessment" ? "تقييم مبدئي" : a.session_kind === "test" ? "اختبار" : "تقييم دوري")
+            ? kindLabel(a.session_kind)
             : "جلسة"),
         }));
         if (!link) return null;
