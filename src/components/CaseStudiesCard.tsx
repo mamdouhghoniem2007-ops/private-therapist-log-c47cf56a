@@ -303,6 +303,7 @@ export function CaseStudiesCard({
       .insert({
         name: r.child_name,
         whatsapp: r.data?.child?.phone || null,
+        birth_date: r.data?.child?.birth_date || null,
         specialist_id: specialistId,
         recurring_days: [],
         recurring_time: "16:00",
