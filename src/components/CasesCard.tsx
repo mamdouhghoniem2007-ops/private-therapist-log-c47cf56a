@@ -1060,7 +1060,7 @@ export function CasesCard({
         ) : (
           <div className="divide-y">
             {visibleCases.map((c) => (
-              <div key={c.id} className="py-3">
+              <div key={c.id} id={`case-row-${c.id}`} className={`py-3 rounded-lg transition-colors ${highlightId === c.id ? "bg-primary/5 ring-2 ring-primary/40 px-2" : ""}`}>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
