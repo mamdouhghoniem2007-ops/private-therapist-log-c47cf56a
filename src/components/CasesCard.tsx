@@ -122,6 +122,7 @@ export function CasesCard({
   const [editDraft, setEditDraft] = useState<CaseRow | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [cycleCounts, setCycleCounts] = useState<Record<string, number>>({});
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   // حساب موضع الجلسة الحالية داخل الدورة (مثال: الجلسة 6 من 8)
   const cycleInfo = (c: CaseRow) => {
