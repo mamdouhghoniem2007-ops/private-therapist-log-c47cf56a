@@ -748,6 +748,27 @@ export function CasesCard({
 
   useEffect(() => { load(); }, [load]);
 
+  // فتح ملف الحالة مباشرة بعد تحويل دراسة الحالة إلى ملف
+  useEffect(() => {
+    const onFocusCase = async (e: Event) => {
+      const id = (e as CustomEvent<{ id: string }>).detail?.id;
+      if (!id) return;
+      setShowArchive(false);
+      await load();
+      setHighlightId(id);
+      if (canManage) {
+        const { data } = await supabase.from("cases").select("*").eq("id", id).maybeSingle();
+        if (data) startEdit(data as CaseRow);
+      }
+      setTimeout(() => {
+        document.getElementById(`case-row-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 250);
+      setTimeout(() => setHighlightId((h) => (h === id ? null : h)), 6000);
+    };
+    window.addEventListener("case-file:focus", onFocusCase as EventListener);
+    return () => window.removeEventListener("case-file:focus", onFocusCase as EventListener);
+  }, [load, canManage]);
+
   useEffect(() => {
     if (!specialistId && specialists.length) setSpecialistId(specialists[0].id);
   }, [specialists, specialistId]);
