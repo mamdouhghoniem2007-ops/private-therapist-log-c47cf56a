@@ -415,6 +415,19 @@ export function CaseStudiesCard({
                       <UserPlus className="ml-1 h-4 w-4" /> تحويل لملف طفل
                     </Button>
                   )}
+                  {r.case_id && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-sky-500/50 text-sky-700 hover:bg-sky-500/10"
+                      onClick={() =>
+                        window.dispatchEvent(new CustomEvent("case-file:focus", { detail: { id: r.case_id } }))
+                      }
+                      title="فتح ملف الطفل بالمدفوعات والمتابعة والسجل"
+                    >
+                      <UserPlus className="ml-1 h-4 w-4" /> فتح ملف الطفل
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => (editingId === r.id ? cancel() : startEdit(r))}>
                     <Pencil className="h-4 w-4" />
                   </Button>
