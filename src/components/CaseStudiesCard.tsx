@@ -320,7 +320,8 @@ export function CaseStudiesCard({
       .update({ case_id: (data as any).id, status: "converted" } as any)
       .eq("id", r.id);
     if (linkErr) toast.error("تم إنشاء الملف لكن تعذر الربط");
-    toast.success("تم إنشاء ملف الطفل — أكمل المواعيد من ملف الحالات");
+    toast.success("تم إنشاء ملف الطفل — أكمل باقي البيانات من ملف الحالة بالأسفل");
+    window.dispatchEvent(new CustomEvent("case-file:focus", { detail: { id: (data as any).id } }));
     void load();
   };
 
@@ -412,6 +413,19 @@ export function CaseStudiesCard({
                       onClick={() => convertToCase(r)}
                     >
                       <UserPlus className="ml-1 h-4 w-4" /> تحويل لملف طفل
+                    </Button>
+                  )}
+                  {r.case_id && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-sky-500/50 text-sky-700 hover:bg-sky-500/10"
+                      onClick={() =>
+                        window.dispatchEvent(new CustomEvent("case-file:focus", { detail: { id: r.case_id } }))
+                      }
+                      title="فتح ملف الطفل بالمدفوعات والمتابعة والسجل"
+                    >
+                      <UserPlus className="ml-1 h-4 w-4" /> فتح ملف الطفل
                     </Button>
                   )}
                   <Button size="sm" variant="outline" onClick={() => (editingId === r.id ? cancel() : startEdit(r))}>

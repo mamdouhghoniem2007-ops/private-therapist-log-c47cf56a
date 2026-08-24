@@ -122,6 +122,7 @@ export function CasesCard({
   const [editDraft, setEditDraft] = useState<CaseRow | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [cycleCounts, setCycleCounts] = useState<Record<string, number>>({});
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   // حساب موضع الجلسة الحالية داخل الدورة (مثال: الجلسة 6 من 8)
   const cycleInfo = (c: CaseRow) => {
@@ -748,6 +749,27 @@ export function CasesCard({
 
   useEffect(() => { load(); }, [load]);
 
+  // فتح ملف الحالة مباشرة بعد تحويل دراسة الحالة إلى ملف
+  useEffect(() => {
+    const onFocusCase = async (e: Event) => {
+      const id = (e as CustomEvent<{ id: string }>).detail?.id;
+      if (!id) return;
+      setShowArchive(false);
+      await load();
+      setHighlightId(id);
+      if (canManage) {
+        const { data } = await supabase.from("cases").select("*").eq("id", id).maybeSingle();
+        if (data) startEdit(data as CaseRow);
+      }
+      setTimeout(() => {
+        document.getElementById(`case-row-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 250);
+      setTimeout(() => setHighlightId((h) => (h === id ? null : h)), 6000);
+    };
+    window.addEventListener("case-file:focus", onFocusCase as EventListener);
+    return () => window.removeEventListener("case-file:focus", onFocusCase as EventListener);
+  }, [load, canManage]);
+
   useEffect(() => {
     if (!specialistId && specialists.length) setSpecialistId(specialists[0].id);
   }, [specialists, specialistId]);
@@ -1060,7 +1082,7 @@ export function CasesCard({
         ) : (
           <div className="divide-y">
             {visibleCases.map((c) => (
-              <div key={c.id} className="py-3">
+              <div key={c.id} id={`case-row-${c.id}`} className={`py-3 rounded-lg transition-colors ${highlightId === c.id ? "bg-primary/5 ring-2 ring-primary/40 px-2" : ""}`}>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
