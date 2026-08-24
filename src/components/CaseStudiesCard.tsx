@@ -320,7 +320,8 @@ export function CaseStudiesCard({
       .update({ case_id: (data as any).id, status: "converted" } as any)
       .eq("id", r.id);
     if (linkErr) toast.error("تم إنشاء الملف لكن تعذر الربط");
-    toast.success("تم إنشاء ملف الطفل — أكمل المواعيد من ملف الحالات");
+    toast.success("تم إنشاء ملف الطفل — أكمل باقي البيانات من ملف الحالة بالأسفل");
+    window.dispatchEvent(new CustomEvent("case-file:focus", { detail: { id: (data as any).id } }));
     void load();
   };
 
