@@ -157,7 +157,8 @@ export function WeeklyScheduleGrid({
   const goToday = () => setWeekStart(startOfArabicWeek(new Date()));
 
   const statusBg = (s: string) => {
-    if (s === "attended" || s === "completed") return "bg-blue-500/15 border-blue-500/40 text-blue-900";
+    if (s === "attended") return "bg-emerald-500/20 border-emerald-500/50 text-emerald-900";
+    if (s === "completed") return "bg-blue-500/15 border-blue-500/40 text-blue-900";
     if (s === "apologized") return "bg-orange-500/15 border-orange-500/40 text-orange-900";
     if (s === "absent") return "bg-red-500/15 border-red-500/40 text-red-900";
     return "bg-primary/10 border-primary/30 text-foreground";
