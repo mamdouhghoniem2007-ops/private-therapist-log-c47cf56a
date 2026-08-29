@@ -1312,7 +1312,7 @@ function AppointmentRow({
       <div className="w-full sm:flex-1 sm:min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`font-semibold ${isInactive ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
-          {isAttended && <span className="text-xs rounded bg-blue-500/20 px-2 py-0.5 text-blue-700 font-semibold">حضرت</span>}
+          {isAttended && <span className="text-xs rounded bg-emerald-500/20 px-2 py-0.5 text-emerald-700 font-semibold">حضرت</span>}
           {isApologized && <span className="text-xs rounded bg-orange-500/20 px-2 py-0.5 text-orange-700 font-semibold">معتذرة</span>}
           {isAbsent && <span className="text-xs rounded bg-red-500/20 px-2 py-0.5 text-red-700 font-semibold">غائبة</span>}
           {a.session_kind && a.session_kind !== "regular" && (
