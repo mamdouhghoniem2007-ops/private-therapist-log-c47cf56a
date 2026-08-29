@@ -1368,7 +1368,7 @@ function AppointmentRow({
           <Button
             size="sm"
             variant={isAttended ? "default" : "outline"}
-            className={isAttended ? "bg-blue-600 hover:bg-blue-700 text-white" : "border-blue-500/50 text-blue-700 hover:bg-blue-500/10"}
+            className={isAttended ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-emerald-500/50 text-emerald-700 hover:bg-emerald-500/10"}
             onClick={() => onAttendance("attended")}
           >
             حضرت
