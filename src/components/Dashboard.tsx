@@ -1301,7 +1301,7 @@ function AppointmentRow({
   const startedTxt = fmtT(a.started_at);
   const endedTxt = fmtT(a.ended_at);
   const rowBg = isAttended
-    ? "bg-blue-500/10 border-blue-500/40"
+    ? "bg-emerald-500/10 border-emerald-500/40"
     : isApologized
     ? "bg-orange-500/10 border-orange-500/40"
     : isAbsent
