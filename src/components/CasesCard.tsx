@@ -1443,7 +1443,7 @@ export function CasesCard({
                                   <Button
                                     size="sm"
                                     variant={a.status === "attended" ? "default" : "outline"}
-                                    className={`h-6 px-2 text-[11px] ${a.status === "attended" ? "bg-blue-600 hover:bg-blue-700 text-white" : "border-blue-500/50 text-blue-700 hover:bg-blue-500/10"}`}
+                                    className={`h-6 px-2 text-[11px] ${a.status === "attended" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-emerald-500/50 text-emerald-700 hover:bg-emerald-500/10"}`}
                                     onClick={() => setApptStatus(c, a.id, "attended")}
                                   >حضرت</Button>
                                   <Button
