@@ -1433,7 +1433,7 @@ export function CasesCard({
                                 <span dir="ltr"> · {fmtTime12(a.scheduled_time)}</span>
                               </span>
                               <span className="text-muted-foreground">— {KIND_LABEL[a.session_kind] || a.session_kind}</span>
-                              {a.status === "attended" && <span className="rounded bg-blue-500/15 text-blue-700 px-1.5 py-0.5 font-semibold">حضرت</span>}
+                              {a.status === "attended" && <span className="rounded bg-emerald-500/20 border border-emerald-500/50 text-emerald-900 px-1.5 py-0.5 font-semibold">حضرت</span>}
                               {(a.status === "apologized" || a.status === "cancelled") && <span className="rounded bg-orange-500/15 text-orange-700 px-1.5 py-0.5 font-semibold">معتذرة</span>}
                               {a.status === "absent" && <span className="rounded bg-red-500/15 text-red-700 px-1.5 py-0.5 font-semibold">غائبة</span>}
                             </span>
@@ -1443,7 +1443,7 @@ export function CasesCard({
                                   <Button
                                     size="sm"
                                     variant={a.status === "attended" ? "default" : "outline"}
-                                    className={`h-6 px-2 text-[11px] ${a.status === "attended" ? "bg-blue-600 hover:bg-blue-700 text-white" : "border-blue-500/50 text-blue-700 hover:bg-blue-500/10"}`}
+                                    className={`h-6 px-2 text-[11px] ${a.status === "attended" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-emerald-500/50 text-emerald-700 hover:bg-emerald-500/10"}`}
                                     onClick={() => setApptStatus(c, a.id, "attended")}
                                   >حضرت</Button>
                                   <Button

@@ -1301,7 +1301,7 @@ function AppointmentRow({
   const startedTxt = fmtT(a.started_at);
   const endedTxt = fmtT(a.ended_at);
   const rowBg = isAttended
-    ? "bg-blue-500/10 border-blue-500/40"
+    ? "bg-emerald-500/10 border-emerald-500/40"
     : isApologized
     ? "bg-orange-500/10 border-orange-500/40"
     : isAbsent
@@ -1312,7 +1312,7 @@ function AppointmentRow({
       <div className="w-full sm:flex-1 sm:min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`font-semibold ${isInactive ? "line-through text-muted-foreground" : ""}`}>{a.case_name}</span>
-          {isAttended && <span className="text-xs rounded bg-blue-500/20 px-2 py-0.5 text-blue-700 font-semibold">حضرت</span>}
+          {isAttended && <span className="text-xs rounded bg-emerald-500/20 px-2 py-0.5 text-emerald-700 font-semibold">حضرت</span>}
           {isApologized && <span className="text-xs rounded bg-orange-500/20 px-2 py-0.5 text-orange-700 font-semibold">معتذرة</span>}
           {isAbsent && <span className="text-xs rounded bg-red-500/20 px-2 py-0.5 text-red-700 font-semibold">غائبة</span>}
           {a.session_kind && a.session_kind !== "regular" && (
@@ -1368,7 +1368,7 @@ function AppointmentRow({
           <Button
             size="sm"
             variant={isAttended ? "default" : "outline"}
-            className={isAttended ? "bg-blue-600 hover:bg-blue-700 text-white" : "border-blue-500/50 text-blue-700 hover:bg-blue-500/10"}
+            className={isAttended ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-emerald-500/50 text-emerald-700 hover:bg-emerald-500/10"}
             onClick={() => onAttendance("attended")}
           >
             حضرت
