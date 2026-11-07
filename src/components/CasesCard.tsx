@@ -1203,7 +1203,7 @@ export function CasesCard({
                           {c.archived ? <ArchiveRestore className="h-4 w-4 ml-1" /> : <Archive className="h-4 w-4 ml-1" />}
                           {c.archived ? "استرجاع" : "أرشفة"}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => editingId === c.id ? cancelEdit() : startEdit(c)}>
+                        <Button size="sm" variant="outline" aria-label={editingId === c.id ? "إلغاء تعديل الحالة" : "تعديل بيانات الحالة"} title={editingId === c.id ? "إلغاء تعديل الحالة" : "تعديل بيانات الحالة"} onClick={() => editingId === c.id ? cancelEdit() : startEdit(c)}>
                           {editingId === c.id ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => remove(c)}>
