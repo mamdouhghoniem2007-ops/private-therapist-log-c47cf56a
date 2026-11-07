@@ -6,6 +6,14 @@ import { AuthForm } from "@/components/AuthForm";
 import { Dashboard } from "@/components/Dashboard";
 
 export const Route = createFileRoute("/")({
+  head: () => ({ meta: [
+    { title: "مركز رعاية | المواعيد وملفات الأطفال" },
+    { name: "description", content: "إدارة مواعيد الأطفال وملفات الحالات والحضور بمركز رعاية." },
+    { property: "og:title", content: "مركز رعاية | المواعيد وملفات الأطفال" },
+    { property: "og:description", content: "إدارة مواعيد الأطفال وملفات الحالات والحضور بمركز رعاية." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: Index,
 });
 
