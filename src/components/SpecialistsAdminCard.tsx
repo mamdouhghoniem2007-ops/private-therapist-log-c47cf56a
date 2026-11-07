@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, UserCog, Download, Printer } from "lucide-react";
+import { CaseWeekdayEditor } from "@/components/CaseWeekdayEditor";
+import { dayTime, selectedDayTimes, validDayTimes, WEEKDAY_LABELS } from "@/lib/case-schedule";
 import { AvailabilityEditor } from "@/components/AvailabilityEditor";
 import { fmtTime12 } from "@/lib/utils";
 
@@ -70,6 +72,7 @@ type CaseRow = {
   specialist_id: string;
   whatsapp: string | null;
   recurring_time: string;
+  recurring_times?: unknown;
   recurring_days: number[];
   default_duration_minutes: number;
   default_cost: number;
@@ -238,6 +241,11 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
     const table =
       editKind === "session" ? "sessions" : editKind === "appointment" ? "appointments" : "cases";
     const payload: any = { ...editData };
+    if (editKind === "case") {
+      if (!validDayTimes(payload.recurring_days || [], payload.recurring_times, payload.recurring_time)) return toast.error("اختر يومًا واحدًا على الأقل وحدد ساعة لكل يوم");
+      payload.recurring_times = selectedDayTimes(payload.recurring_days, payload.recurring_times, payload.recurring_time);
+      payload.recurring_time = dayTime(payload.recurring_times, payload.recurring_days[0], payload.recurring_time);
+    }
     // normalize numerics
     ["cost", "specialist_percentage", "discount_percentage", "duration_minutes",
      "default_cost", "default_specialist_percentage", "default_duration_minutes"].forEach((k) => {
@@ -545,7 +553,7 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
                   ) : cases.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>{r.name}</TableCell>
-                      <TableCell>{r.recurring_time.slice(0,5)}</TableCell>
+                      <TableCell>{r.recurring_days.map((day) => <div key={day}>{WEEKDAY_LABELS[day]} · {fmtTime12(dayTime(r.recurring_times, day, r.recurring_time))}</div>)}</TableCell>
                       <TableCell>{r.default_duration_minutes}د</TableCell>
                       <TableCell>{r.default_cost}</TableCell>
                       <TableCell>{r.default_specialist_percentage}%</TableCell>
@@ -627,7 +635,6 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="اسم الحالة"><Input value={editData.name} onChange={(e) => setField("name", e.target.value)} /></Field>
               <Field label="واتساب"><Input value={editData.whatsapp || ""} onChange={(e) => setField("whatsapp", e.target.value)} /></Field>
-              <Field label="وقت الجلسة"><Input type="time" value={editData.recurring_time?.slice(0,5)} onChange={(e) => setField("recurring_time", e.target.value)} /></Field>
               <Field label="المدة الافتراضية"><Input type="number" value={editData.default_duration_minutes} onChange={(e) => setField("default_duration_minutes", e.target.value)} /></Field>
               <Field label="التكلفة الافتراضية"><Input type="number" value={editData.default_cost} onChange={(e) => setField("default_cost", e.target.value)} /></Field>
               <Field label="نسبة الأخصائي %"><Input type="number" value={editData.default_specialist_percentage} onChange={(e) => setField("default_specialist_percentage", e.target.value)} /></Field>
@@ -641,11 +648,8 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="أيام الأسبوع (0=أحد، 6=سبت، مفصولة بفاصلة)" full>
-                <Input
-                  value={(editData.recurring_days || []).join(",")}
-                  onChange={(e) => setField("recurring_days", e.target.value.split(",").map((x: string) => Number(x.trim())).filter((n: number) => !isNaN(n) && n >= 0 && n <= 6))}
-                />
+              <Field label="أيام الجلسات ومواعيدها" full>
+                <CaseWeekdayEditor idPrefix="staff-case-day" days={editData.recurring_days || []} times={editData.recurring_times} fallbackTime={editData.recurring_time} onChange={(days, times) => setEditData((draft: any) => ({ ...draft, recurring_days: days, recurring_times: times }))} />
               </Field>
               <Field label="ملاحظات" full><Textarea value={editData.notes || ""} onChange={(e) => setField("notes", e.target.value)} /></Field>
             </div>

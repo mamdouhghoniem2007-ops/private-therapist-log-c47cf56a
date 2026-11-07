@@ -9,6 +9,14 @@ import { toast } from "sonner";
 import logo from "@/assets/logo.png.asset.json";
 
 export const Route = createFileRoute("/reset-password")({
+  head: () => ({ meta: [
+    { title: "مركز رعاية | استعادة كلمة المرور" },
+    { name: "description", content: "تعيين كلمة مرور جديدة لحساب مركز رعاية." },
+    { property: "og:title", content: "مركز رعاية | استعادة كلمة المرور" },
+    { property: "og:description", content: "تعيين كلمة مرور جديدة لحساب مركز رعاية." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: ResetPassword,
 });
 

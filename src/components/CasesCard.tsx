@@ -13,6 +13,8 @@ import { Users, Plus, Trash2, RefreshCw, Calendar, ChevronDown, ChevronUp, Messa
 import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 import { fmtTime12 } from "@/lib/utils";
 import { SlotSuggestionsDialog, type Suggestion } from "./SlotSuggestionsDialog";
+import { CaseWeekdayEditor } from "./CaseWeekdayEditor";
+import { dayTime, selectedDayTimes, validDayTimes, type DayTimes } from "@/lib/case-schedule";
 import { CasePaymentsDialog, type PaymentCase } from "./CasePaymentsDialog";
 
 type CaseAppt = {
@@ -42,6 +44,7 @@ type CaseRow = {
   specialist_id: string;
   recurring_days: number[];
   recurring_time: string;
+  recurring_times?: unknown;
   default_duration_minutes: number;
   default_cost: number;
   default_specialist_percentage: number;
@@ -144,18 +147,11 @@ export function CasesCard({
     return COST_PRESETS.includes(Number(draft.default_cost)) ? String(draft.default_cost) : "custom";
   };
   const cancelEdit = () => { setEditingId(null); setEditDraft(null); };
-  const toggleEditDay = (d: number) => {
-    if (!editDraft) return;
-    const ds = editDraft.recurring_days.includes(d)
-      ? editDraft.recurring_days.filter((x) => x !== d)
-      : [...editDraft.recurring_days, d].sort();
-    setEditDraft({ ...editDraft, recurring_days: ds });
-  };
 
   const saveEdit = async () => {
     if (!editDraft) return;
     if (!editDraft.name.trim()) return toast.error("اسم الحالة مطلوب");
-    if (editDraft.recurring_days.length === 0) return toast.error("اختر أيام الأسبوع");
+    if (!validDayTimes(editDraft.recurring_days, editDraft.recurring_times, editDraft.recurring_time)) return toast.error("اختر يومًا واحدًا على الأقل وحدد ساعة لكل يوم");
     setSavingEdit(true);
     const { error } = await supabase.from("cases").update({
       name: editDraft.name.trim(),
@@ -163,7 +159,8 @@ export function CasesCard({
       birth_date: editDraft.birth_date || null,
       specialist_id: editDraft.specialist_id,
       recurring_days: editDraft.recurring_days,
-      recurring_time: editDraft.recurring_time,
+      recurring_time: dayTime(editDraft.recurring_times, editDraft.recurring_days[0], editDraft.recurring_time),
+      recurring_times: selectedDayTimes(editDraft.recurring_days, editDraft.recurring_times, editDraft.recurring_time),
       default_duration_minutes: editDraft.default_duration_minutes,
       default_cost: Number(editDraft.default_cost),
       default_specialist_percentage: editDraft.default_specialist_percentage,
@@ -512,7 +509,7 @@ export function CasesCard({
   const [birthDate, setBirthDate] = useState("");
   const [specialistId, setSpecialistId] = useState("");
   const [days, setDays] = useState<number[]>([]);
-  const [time, setTime] = useState("16:00");
+  const [dayTimes, setDayTimes] = useState<DayTimes>({});
   const [duration, setDuration] = useState(45);
   const [cost, setCost] = useState<number | "">("");
   const [costSelect, setCostSelect] = useState<string>("");
@@ -774,10 +771,8 @@ export function CasesCard({
     if (!specialistId && specialists.length) setSpecialistId(specialists[0].id);
   }, [specialists, specialistId]);
 
-  const toggleDay = (d: number) =>
-    setDays((ds) => ds.includes(d) ? ds.filter((x) => x !== d) : [...ds, d].sort());
   const resetForm = () => {
-    setName(""); setWhatsapp(""); setBirthDate(""); setDays([]); setCost(""); setCostSelect("");
+    setName(""); setWhatsapp(""); setBirthDate(""); setDays([]); setDayTimes({}); setCost(""); setCostSelect("");
     setSessionKind("regular"); setSessionSubtype(defaultSubtypeFor("regular"));
     setPaymentType("per_session"); setDiscountPct("");
     setShowForm(false);
@@ -788,7 +783,7 @@ export function CasesCard({
   const addCase = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!specialistId) return toast.error("اختر الأخصائي");
-    if (days.length === 0) return toast.error("اختر أيام الأسبوع");
+    if (!validDayTimes(days, dayTimes)) return toast.error("اختر يومًا واحدًا على الأقل وحدد ساعة لكل يوم");
     if (canSeeFinancial && (cost === "" || cost < 0)) return toast.error("أدخل سعر الجلسة");
     const disc = !canSeeFinancial ? 0 : (discountPct === "" ? 0 : Number(discountPct));
     if (canSeeFinancial && (disc < 0 || disc > 100)) return toast.error("نسبة الخصم بين 0 و 100");
@@ -799,7 +794,8 @@ export function CasesCard({
       birth_date: birthDate || null,
       specialist_id: specialistId,
       recurring_days: days,
-      recurring_time: time,
+      recurring_time: dayTime(dayTimes, days[0]),
+      recurring_times: selectedDayTimes(days, dayTimes),
       default_duration_minutes: duration,
       default_cost: canSeeFinancial ? Number(cost) : 0,
       default_specialist_percentage: canSeeFinancial ? percentage : 0,
@@ -936,7 +932,7 @@ export function CasesCard({
             </div>
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <Label>أيام الأسبوع المتكررة</Label>
+                <Label>أيام الجلسات ومواعيدها</Label>
                 <Button
                   type="button"
                   size="sm"
@@ -948,29 +944,7 @@ export function CasesCard({
                   اقتراح مواعيد فاضية
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {DAY_LABELS.map((label, idx) => {
-                  const selected = days.includes(idx);
-                  return (
-                    <button
-                      type="button"
-                      key={idx}
-                      onClick={() => toggleDay(idx)}
-                      className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
-                        selected
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background hover:bg-muted border-input"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>الساعة</Label>
-              <Input type="time" required value={time} onChange={(e) => setTime(e.target.value)} />
+              <CaseWeekdayEditor idPrefix="new-case-day" days={days} times={dayTimes} onChange={(nextDays, times) => { setDays(nextDays); setDayTimes(times); }} />
             </div>
             <div className="space-y-1.5">
               <Label>المدة</Label>
@@ -1111,8 +1085,7 @@ export function CasesCard({
                       })()}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {c.recurring_days.map((d) => DAY_LABELS[d]).join("، ") || "—"}
-                      <span dir="ltr"> · {fmtTime12(c.recurring_time)}</span>
+                      {c.recurring_days.map((d) => `${DAY_LABELS[d]} ${fmtTime12(dayTime(c.recurring_times, d, c.recurring_time))}`).join("، ") || "—"}
                       {" · "}{c.default_duration_minutes} د
                       {canSeeFinancial && (
                         <>
@@ -1230,7 +1203,7 @@ export function CasesCard({
                           {c.archived ? <ArchiveRestore className="h-4 w-4 ml-1" /> : <Archive className="h-4 w-4 ml-1" />}
                           {c.archived ? "استرجاع" : "أرشفة"}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => editingId === c.id ? cancelEdit() : startEdit(c)}>
+                        <Button size="sm" variant="outline" aria-label={editingId === c.id ? "إلغاء تعديل الحالة" : "تعديل بيانات الحالة"} title={editingId === c.id ? "إلغاء تعديل الحالة" : "تعديل بيانات الحالة"} onClick={() => editingId === c.id ? cancelEdit() : startEdit(c)}>
                           {editingId === c.id ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => remove(c)}>
@@ -1268,22 +1241,8 @@ export function CasesCard({
                       <Input type="date" value={editDraft.start_date} onChange={(e) => setEditDraft({ ...editDraft, start_date: e.target.value })} />
                     </div>
                     <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
-                      <Label>أيام الأسبوع</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {DAY_LABELS.map((label, idx) => {
-                          const selected = editDraft.recurring_days.includes(idx);
-                          return (
-                            <button type="button" key={idx} onClick={() => toggleEditDay(idx)}
-                              className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
-                                selected ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted border-input"
-                              }`}>{label}</button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>الساعة</Label>
-                      <Input type="time" value={editDraft.recurring_time.slice(0,5)} onChange={(e) => setEditDraft({ ...editDraft, recurring_time: e.target.value })} />
+                      <Label>أيام الجلسات ومواعيدها</Label>
+                      <CaseWeekdayEditor idPrefix={`edit-case-${editDraft.id}`} days={editDraft.recurring_days} times={editDraft.recurring_times} fallbackTime={editDraft.recurring_time} onChange={(nextDays, times) => setEditDraft({ ...editDraft, recurring_days: nextDays, recurring_times: times })} />
                     </div>
                     <div className="space-y-1.5">
                       <Label>المدة</Label>
@@ -1549,8 +1508,9 @@ export function CasesCard({
         durationMinutes={duration}
         onPick={(s: Suggestion) => {
           setSpecialistId(s.specialistId);
-          setDays([s.dayOfWeek]);
-          setTime(s.time);
+          const sameSpecialist = specialistId === s.specialistId;
+          setDays((previous) => sameSpecialist ? Array.from(new Set([...previous, s.dayOfWeek])).sort() : [s.dayOfWeek]);
+          setDayTimes((previous) => ({ ...(sameSpecialist ? previous : {}), [String(s.dayOfWeek)]: s.time }));
           setShowForm(true);
           toast.success(`تم تعبئة النموذج بـ ${s.specialistName} — ${DAY_LABELS[s.dayOfWeek]} ${s.time}`);
         }}
