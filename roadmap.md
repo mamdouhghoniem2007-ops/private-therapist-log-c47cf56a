@@ -1,0 +1,4 @@
+- [ ] Save and generate independent appointment times for each selected weekday, preserving existing schedules.
+- [ ] Update child add/edit forms and staff schedule editing.
+- [ ] Test independent days and one-day scheduling, verify in the signed-in app.
+- [ ] Apply required package security update.
