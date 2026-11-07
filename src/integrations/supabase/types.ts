@@ -184,6 +184,7 @@ export type Database = {
           payment_type: string
           recurring_days: number[]
           recurring_time: string
+          recurring_times: Json
           sessions_per_cycle: number
           specialist_id: string
           start_date: string
@@ -210,6 +211,7 @@ export type Database = {
           payment_type?: string
           recurring_days?: number[]
           recurring_time: string
+          recurring_times?: Json
           sessions_per_cycle?: number
           specialist_id: string
           start_date?: string
@@ -236,6 +238,7 @@ export type Database = {
           payment_type?: string
           recurring_days?: number[]
           recurring_time?: string
+          recurring_times?: Json
           sessions_per_cycle?: number
           specialist_id?: string
           start_date?: string
