@@ -1088,7 +1088,7 @@ export function CasesCard({
                             date: next.scheduled_date,
                             time: next.scheduled_time,
                             durationMinutes: c.default_duration_minutes,
-                            specialistName: profilesMap[c.specialist_id] || null,
+                            specialistName: profilesMap[next.specialist_id] || null,
                             cost: c.default_cost,
                             discountPercentage: c.discount_percentage,
                             sessionKindLabel: KIND_LABEL[next.session_kind] || "جلسة",
@@ -1325,12 +1325,13 @@ export function CasesCard({
                                 <span dir="ltr"> · {fmtTime12(a.scheduled_time)}</span>
                               </span>
                               <span className="text-muted-foreground">— {KIND_LABEL[a.session_kind] || a.session_kind}</span>
+                              <span className="text-muted-foreground">— {profilesMap[a.specialist_id] || "—"}</span>
                               {a.status === "attended" && <span className="rounded bg-emerald-500/20 border border-emerald-500/50 text-emerald-900 px-1.5 py-0.5 font-semibold">حضرت</span>}
                               {(a.status === "apologized" || a.status === "cancelled") && <span className="rounded bg-orange-500/15 text-orange-700 px-1.5 py-0.5 font-semibold">معتذرة</span>}
                               {a.status === "absent" && <span className="rounded bg-red-500/15 text-red-700 px-1.5 py-0.5 font-semibold">غائبة</span>}
                             </span>
                             <span className="flex items-center gap-1 flex-wrap">
-                              {canManage && (
+                              {(canManage || a.specialist_id === user.id) && (
                                 <>
                                   <Button
                                     size="sm"
@@ -1366,7 +1367,7 @@ export function CasesCard({
                                   date: a.scheduled_date,
                                   time: a.scheduled_time,
                                   durationMinutes: c.default_duration_minutes,
-                                  specialistName: profilesMap[c.specialist_id],
+                                  specialistName: profilesMap[a.specialist_id],
                                   sessionKindLabel: a.session_kind !== "regular" ? KIND_LABEL[a.session_kind] : null,
                                 }));
                                 return link ? (
