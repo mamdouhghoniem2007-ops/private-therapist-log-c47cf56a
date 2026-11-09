@@ -321,12 +321,18 @@ export function Dashboard({ user }: { user: User }) {
     const notes = sNotes.trim() || null;
 
     // 1) لو فيه موعد لنفس الحالة اليوم (سواء مجدول أو تم حضوره) → ادمج الملاحظات على نفس القيد
-    const existingAppt = appointments.find(
+    const matchingAppts = appointments.filter(
       (a) =>
         a.specialist_id === user.id &&
         a.scheduled_date === todayStr &&
+        a.status !== "cancelled" &&
         a.case_name.trim().toLowerCase() === name.toLowerCase(),
     );
+    if (matchingAppts.length > 1) {
+      setSubmitting(false);
+      return toast.error("للطفل أكثر من جلسة اليوم؛ اختر الجلسة من جدول اليوم أو من ملف الطفل");
+    }
+    const existingAppt = matchingAppts[0];
     if (existingAppt) {
       const merged = notes
         ? (existingAppt.notes ? `${existingAppt.notes}\n${notes}` : notes)
@@ -366,7 +372,6 @@ export function Dashboard({ user }: { user: User }) {
     const { data: caseRow } = await supabase
       .from("cases")
       .select("id, default_cost, default_specialist_percentage, default_duration_minutes, discount_percentage, payment_type")
-      .eq("specialist_id", user.id)
       .ilike("name", name)
       .maybeSingle();
     if (caseRow) {
