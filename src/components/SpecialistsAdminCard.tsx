@@ -25,7 +25,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, UserCog, Download, Printer } from "lucide-react";
 import { CaseWeekdayEditor } from "@/components/CaseWeekdayEditor";
-import { dayTime, selectedDayTimes, validDayTimes, WEEKDAY_LABELS } from "@/lib/case-schedule";
+import { caseSessions, validSessions, scheduleFields, assignedToCase, WEEKDAY_LABELS } from "@/lib/case-schedule";
 import { AvailabilityEditor } from "@/components/AvailabilityEditor";
 import { fmtTime12 } from "@/lib/utils";
 
@@ -73,6 +73,7 @@ type CaseRow = {
   whatsapp: string | null;
   recurring_time: string;
   recurring_times?: unknown;
+  recurring_sessions?: unknown;
   recurring_days: number[];
   default_duration_minutes: number;
   default_cost: number;
@@ -131,7 +132,6 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
       supabase
         .from("cases")
         .select("*")
-        .eq("specialist_id", specialistId)
         .order("name"),
     ]);
     if (s.error) toast.error(s.error.message);
@@ -139,7 +139,7 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
     if (a.error) toast.error(a.error.message);
     else setAppointments((a.data as AppointmentRow[]) || []);
     if (c.error) toast.error(c.error.message);
-    else setCases((c.data as CaseRow[]) || []);
+    else setCases(((c.data as CaseRow[]) || []).filter((row) => assignedToCase(row, specialistId)));
     setLoading(false);
   };
 
@@ -242,9 +242,9 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
       editKind === "session" ? "sessions" : editKind === "appointment" ? "appointments" : "cases";
     const payload: any = { ...editData };
     if (editKind === "case") {
-      if (!validDayTimes(payload.recurring_days || [], payload.recurring_times, payload.recurring_time)) return toast.error("اختر يومًا واحدًا على الأقل وحدد ساعة لكل يوم");
-      payload.recurring_times = selectedDayTimes(payload.recurring_days, payload.recurring_times, payload.recurring_time);
-      payload.recurring_time = dayTime(payload.recurring_times, payload.recurring_days[0], payload.recurring_time);
+      const sessions = caseSessions(payload);
+      if (!validSessions(sessions)) return toast.error("حدد يومًا وساعة وأخصائيًا لكل جلسة، دون تكرار نفس الموعد");
+      Object.assign(payload, scheduleFields(sessions));
     }
     // normalize numerics
     ["cost", "specialist_percentage", "discount_percentage", "duration_minutes",
@@ -553,7 +553,7 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
                   ) : cases.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>{r.name}</TableCell>
-                      <TableCell>{r.recurring_days.map((day) => <div key={day}>{WEEKDAY_LABELS[day]} · {fmtTime12(dayTime(r.recurring_times, day, r.recurring_time))}</div>)}</TableCell>
+                      <TableCell>{caseSessions(r).map((s, index) => <div key={index}>{WEEKDAY_LABELS[s.day]} · {fmtTime12(s.time)} — {specialists.find((p) => p.id === s.specialist_id)?.full_name || "—"}</div>)}</TableCell>
                       <TableCell>{r.default_duration_minutes}د</TableCell>
                       <TableCell>{r.default_cost}</TableCell>
                       <TableCell>{r.default_specialist_percentage}%</TableCell>
@@ -649,7 +649,7 @@ export function SpecialistsAdminCard({ specialists }: { specialists: Profile[] }
                 </Select>
               </Field>
               <Field label="أيام الجلسات ومواعيدها" full>
-                <CaseWeekdayEditor idPrefix="staff-case-day" days={editData.recurring_days || []} times={editData.recurring_times} fallbackTime={editData.recurring_time} onChange={(days, times) => setEditData((draft: any) => ({ ...draft, recurring_days: days, recurring_times: times }))} />
+                <CaseWeekdayEditor idPrefix="staff-case-day" sessions={caseSessions(editData)} specialists={specialists} defaultSpecialistId={editData.specialist_id} onChange={(sessions) => setEditData((draft: any) => ({ ...draft, ...scheduleFields(sessions) }))} />
               </Field>
               <Field label="ملاحظات" full><Textarea value={editData.notes || ""} onChange={(e) => setField("notes", e.target.value)} /></Field>
             </div>

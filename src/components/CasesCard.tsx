@@ -14,7 +14,7 @@ import { waLink, formatAppointmentMessage } from "@/lib/whatsapp";
 import { fmtTime12 } from "@/lib/utils";
 import { SlotSuggestionsDialog, type Suggestion } from "./SlotSuggestionsDialog";
 import { CaseWeekdayEditor } from "./CaseWeekdayEditor";
-import { dayTime, selectedDayTimes, validDayTimes, type DayTimes } from "@/lib/case-schedule";
+import { caseSessions, validSessions, scheduleFields, assignedToCase, type RecurringSession } from "@/lib/case-schedule";
 import { CasePaymentsDialog, type PaymentCase } from "./CasePaymentsDialog";
 
 type CaseAppt = {
@@ -23,6 +23,7 @@ type CaseAppt = {
   scheduled_time: string;
   status: string;
   session_kind: string;
+  specialist_id: string;
 };
 
 const KIND_LABEL: Record<string, string> = {
@@ -45,6 +46,7 @@ type CaseRow = {
   recurring_days: number[];
   recurring_time: string;
   recurring_times?: unknown;
+  recurring_sessions?: unknown;
   default_duration_minutes: number;
   default_cost: number;
   default_specialist_percentage: number;
@@ -151,16 +153,15 @@ export function CasesCard({
   const saveEdit = async () => {
     if (!editDraft) return;
     if (!editDraft.name.trim()) return toast.error("اسم الحالة مطلوب");
-    if (!validDayTimes(editDraft.recurring_days, editDraft.recurring_times, editDraft.recurring_time)) return toast.error("اختر يومًا واحدًا على الأقل وحدد ساعة لكل يوم");
+    const schedule = caseSessions(editDraft);
+    if (!validSessions(schedule)) return toast.error("حدد يومًا وساعة وأخصائيًا لكل جلسة، دون تكرار نفس الموعد");
     setSavingEdit(true);
     const { error } = await supabase.from("cases").update({
       name: editDraft.name.trim(),
       whatsapp: editDraft.whatsapp?.trim() || null,
       birth_date: editDraft.birth_date || null,
       specialist_id: editDraft.specialist_id,
-      recurring_days: editDraft.recurring_days,
-      recurring_time: dayTime(editDraft.recurring_times, editDraft.recurring_days[0], editDraft.recurring_time),
-      recurring_times: selectedDayTimes(editDraft.recurring_days, editDraft.recurring_times, editDraft.recurring_time),
+      ...scheduleFields(schedule),
       default_duration_minutes: editDraft.default_duration_minutes,
       default_cost: Number(editDraft.default_cost),
       default_specialist_percentage: editDraft.default_specialist_percentage,
@@ -191,7 +192,7 @@ export function CasesCard({
       setApptLoading((l) => ({ ...l, [c.id]: true }));
       const { data, error } = await supabase
         .from("appointments")
-        .select("id, scheduled_date, scheduled_time, status, session_kind")
+        .select("id, scheduled_date, scheduled_time, status, session_kind, specialist_id")
         .eq("case_id", c.id)
         .gte("scheduled_date", today())
         .order("scheduled_date", { ascending: true })
@@ -209,7 +210,9 @@ export function CasesCard({
       .from("appointments")
       .select("id, status")
       .eq("case_id", c.id)
+      .eq("specialist_id", user.id)
       .eq("scheduled_date", todayStr)
+      .in("status", ["scheduled"])
       .order("scheduled_time", { ascending: true })
       .limit(1);
     if (qErr) { toast.error(qErr.message); return; }
@@ -508,8 +511,8 @@ export function CasesCard({
   const [whatsapp, setWhatsapp] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [specialistId, setSpecialistId] = useState("");
-  const [days, setDays] = useState<number[]>([]);
-  const [dayTimes, setDayTimes] = useState<DayTimes>({});
+  const [newSessions, setNewSessions] = useState<RecurringSession[]>([]);
+  const days = useMemo(() => Array.from(new Set(newSessions.map((s) => s.day))), [newSessions]);
   const [duration, setDuration] = useState(45);
   const [cost, setCost] = useState<number | "">("");
   const [costSelect, setCostSelect] = useState<string>("");
@@ -608,113 +611,45 @@ export function CasesCard({
     w.document.close();
   };
 
-  // Quick-log session dialog
+  // Log a specific scheduled session, never merge different same-day appointments.
+  type LogAppointment = { id: string; specialist_id: string; scheduled_time: string; notes: string | null; duration_minutes: number; cost: number | null; specialist_percentage: number; discount_percentage: number; payment_type: string; session_type: string | null; test_type: string | null };
   const [logCase, setLogCase] = useState<CaseRow | null>(null);
+  const [logAppointments, setLogAppointments] = useState<LogAppointment[]>([]);
+  const [logAppointmentId, setLogAppointmentId] = useState("");
   const [logNotes, setLogNotes] = useState("");
   const [logSubmitting, setLogSubmitting] = useState(false);
-
-  const openQuickLog = (c: CaseRow) => {
+  const openQuickLog = async (c: CaseRow) => {
+    let query = supabase.from("appointments").select("id, specialist_id, scheduled_time, notes, duration_minutes, cost, specialist_percentage, discount_percentage, payment_type, session_type, test_type").eq("case_id", c.id).eq("scheduled_date", today()).neq("status", "cancelled").order("scheduled_time");
+    if (role === "specialist") query = query.eq("specialist_id", user.id);
+    const { data, error } = await query;
+    if (error) return toast.error(error.message);
+    if (!data?.length) return toast.error("لا توجد جلسة مجدولة لهذه الحالة اليوم؛ أضف الموعد من ملف الطفل أولًا");
+    setLogAppointments(data);
+    setLogAppointmentId(data[0].id);
     setLogCase(c);
     setLogNotes("");
   };
-  const closeQuickLog = () => {
-    setLogCase(null);
-    setLogNotes("");
-  };
+  const closeQuickLog = () => { setLogCase(null); setLogAppointments([]); setLogAppointmentId(""); setLogNotes(""); };
   const submitQuickLog = async () => {
-    if (!logCase) return;
+    const appointment = logAppointments.find((a) => a.id === logAppointmentId);
+    if (!logCase || !appointment) return;
     setLogSubmitting(true);
-    const todayStr = today();
-    const nowTime = new Date().toTimeString().slice(0, 5);
-    const notes = logNotes.trim() || null;
-
-    // Check if there's already an appointment for this case today → merge
-    const { data: existingAppt } = await supabase
-      .from("appointments")
-      .select("id, notes, status")
-      .eq("case_id", logCase.id)
-      .eq("scheduled_date", todayStr)
-      .order("scheduled_time", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    const nowIso = new Date().toISOString();
-
-    if (existingAppt) {
-      const merged = notes
-        ? ((existingAppt as any).notes ? `${(existingAppt as any).notes}\n${notes}` : notes)
-        : (existingAppt as any).notes;
-      await supabase.from("appointments")
-        .update({ notes: merged, status: "attended", started_at: nowIso, ended_at: nowIso })
-        .eq("id", (existingAppt as any).id);
-      // Ensure session row exists / update notes
-      const { data: existSess } = await supabase
-        .from("sessions").select("id")
-        .eq("specialist_id", logCase.specialist_id)
-        .eq("case_name", logCase.name)
-        .eq("session_date", todayStr)
-        .maybeSingle();
-      if (existSess) {
-        await supabase.from("sessions").update({ notes: merged }).eq("id", (existSess as any).id);
-      } else {
-        await supabase.from("sessions").insert({
-          specialist_id: logCase.specialist_id,
-          case_name: logCase.name,
-          session_date: todayStr,
-          session_time: nowTime,
-          duration_minutes: logCase.default_duration_minutes,
-          cost: Number(logCase.default_cost) || 0,
-          specialist_percentage: Number(logCase.default_specialist_percentage) || 50,
-          discount_percentage: Number(logCase.discount_percentage) || 0,
-          payment_type: logCase.payment_type || "per_session",
-          session_type: null,
-          test_type: null,
-          notes: merged,
-        });
-      }
-    } else {
-      const { error } = await supabase.from("appointments").insert({
-        specialist_id: logCase.specialist_id,
-        case_name: logCase.name,
-        case_id: logCase.id,
-        scheduled_date: todayStr,
-        scheduled_time: nowTime,
-        duration_minutes: logCase.default_duration_minutes,
-        cost: Number(logCase.default_cost) || 0,
-        specialist_percentage: Number(logCase.default_specialist_percentage) || 50,
-        discount_percentage: Number(logCase.discount_percentage) || 0,
-        payment_type: logCase.payment_type || "per_session",
-        session_kind: "regular",
-        session_type: null,
-        test_type: null,
-        status: "attended",
-        started_at: nowIso,
-        ended_at: nowIso,
-        notes,
-        created_by: user.id,
-      });
-      if (error) { setLogSubmitting(false); return toast.error(error.message); }
-      await supabase.from("sessions").insert({
-        specialist_id: logCase.specialist_id,
-        case_name: logCase.name,
-        session_date: todayStr,
-        session_time: nowTime,
-        duration_minutes: logCase.default_duration_minutes,
-        cost: Number(logCase.default_cost) || 0,
-        specialist_percentage: Number(logCase.default_specialist_percentage) || 50,
-        discount_percentage: Number(logCase.discount_percentage) || 0,
-        payment_type: logCase.payment_type || "per_session",
-        session_type: null,
-        test_type: null,
-        notes,
-      });
-    }
-    setLogSubmitting(false);
-    toast.success(`تم تسجيل جلسة الحالة "${logCase.name}" ✅`);
-    closeQuickLog();
+    try {
+      const notes = [appointment.notes, logNotes.trim()].filter(Boolean).join("\n") || null;
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase.from("appointments").update({ notes, status: "attended", started_at: nowIso, ended_at: nowIso }).eq("id", appointment.id);
+      if (error) throw error;
+      const { data: existing, error: readError } = await supabase.from("sessions").select("id").eq("specialist_id", appointment.specialist_id).eq("case_name", logCase.name).eq("session_date", today()).eq("session_time", appointment.scheduled_time).maybeSingle();
+      if (readError) throw readError;
+      const payload = { specialist_id: appointment.specialist_id, case_name: logCase.name, session_date: today(), session_time: appointment.scheduled_time, duration_minutes: appointment.duration_minutes, cost: Number(appointment.cost) || 0, specialist_percentage: appointment.specialist_percentage, discount_percentage: appointment.discount_percentage, payment_type: appointment.payment_type, session_type: appointment.session_type, test_type: appointment.test_type, notes };
+      const result = existing ? await supabase.from("sessions").update({ notes }).eq("id", existing.id) : await supabase.from("sessions").insert(payload);
+      if (result.error) throw result.error;
+      setAppts((previous) => { const { [logCase.id]: removed, ...rest } = previous; return rest; });
+      toast.success(`تم تسجيل جلسة الحالة "${logCase.name}" ✅`);
+      closeQuickLog();
+    } catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حفظ الجلسة"); }
+    finally { setLogSubmitting(false); }
   };
-
-
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -772,7 +707,7 @@ export function CasesCard({
   }, [specialists, specialistId]);
 
   const resetForm = () => {
-    setName(""); setWhatsapp(""); setBirthDate(""); setDays([]); setDayTimes({}); setCost(""); setCostSelect("");
+    setName(""); setWhatsapp(""); setBirthDate(""); setNewSessions([]); setCost(""); setCostSelect("");
     setSessionKind("regular"); setSessionSubtype(defaultSubtypeFor("regular"));
     setPaymentType("per_session"); setDiscountPct("");
     setShowForm(false);
@@ -783,7 +718,7 @@ export function CasesCard({
   const addCase = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!specialistId) return toast.error("اختر الأخصائي");
-    if (!validDayTimes(days, dayTimes)) return toast.error("اختر يومًا واحدًا على الأقل وحدد ساعة لكل يوم");
+    if (!validSessions(newSessions)) return toast.error("حدد يومًا وساعة وأخصائيًا لكل جلسة، دون تكرار نفس الموعد");
     if (canSeeFinancial && (cost === "" || cost < 0)) return toast.error("أدخل سعر الجلسة");
     const disc = !canSeeFinancial ? 0 : (discountPct === "" ? 0 : Number(discountPct));
     if (canSeeFinancial && (disc < 0 || disc > 100)) return toast.error("نسبة الخصم بين 0 و 100");
@@ -793,9 +728,7 @@ export function CasesCard({
       whatsapp: whatsapp.trim() || null,
       birth_date: birthDate || null,
       specialist_id: specialistId,
-      recurring_days: days,
-      recurring_time: dayTime(dayTimes, days[0]),
-      recurring_times: selectedDayTimes(days, dayTimes),
+      ...scheduleFields(newSessions),
       default_duration_minutes: duration,
       default_cost: canSeeFinancial ? Number(cost) : 0,
       default_specialist_percentage: canSeeFinancial ? percentage : 0,
@@ -865,12 +798,12 @@ export function CasesCard({
   };
 
   const visibleCases = useMemo(() => {
-    const base = canManage ? cases : cases.filter((c) => c.specialist_id === user.id);
+    const base = canManage ? cases : cases.filter((c) => assignedToCase(c, user.id));
     return base.filter((c) => showArchive ? c.archived : !c.archived);
   }, [cases, canManage, user.id, showArchive]);
 
   const archivedCount = useMemo(
-    () => (canManage ? cases : cases.filter((c) => c.specialist_id === user.id)).filter((c) => c.archived).length,
+    () => (canManage ? cases : cases.filter((c) => assignedToCase(c, user.id))).filter((c) => c.archived).length,
     [cases, canManage, user.id]
   );
 
@@ -944,7 +877,7 @@ export function CasesCard({
                   اقتراح مواعيد فاضية
                 </Button>
               </div>
-              <CaseWeekdayEditor idPrefix="new-case-day" days={days} times={dayTimes} onChange={(nextDays, times) => { setDays(nextDays); setDayTimes(times); }} />
+              <CaseWeekdayEditor idPrefix="new-case-day" sessions={newSessions} specialists={specialists} defaultSpecialistId={specialistId} onChange={setNewSessions} />
             </div>
             <div className="space-y-1.5">
               <Label>المدة</Label>
@@ -1085,7 +1018,7 @@ export function CasesCard({
                       })()}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {c.recurring_days.map((d) => `${DAY_LABELS[d]} ${fmtTime12(dayTime(c.recurring_times, d, c.recurring_time))}`).join("، ") || "—"}
+                      {caseSessions(c).filter((s) => canManage || s.specialist_id === user.id).map((s) => `${DAY_LABELS[s.day]} ${fmtTime12(s.time)} — ${profilesMap[s.specialist_id] || "—"}`).join("، ") || "—"}
                       {" · "}{c.default_duration_minutes} د
                       {canSeeFinancial && (
                         <>
@@ -1125,7 +1058,7 @@ export function CasesCard({
                         المدفوعات
                       </Button>
                     )}
-                    {c.active && !isSupervisor && (role === "admin" || c.specialist_id === user.id) && (
+                    {c.active && !isSupervisor && (role === "admin" || assignedToCase(c, user.id)) && (
                       <Button
                         size="sm"
                         className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -1136,7 +1069,7 @@ export function CasesCard({
                         تسجيل جلسة
                       </Button>
                     )}
-                    {role === "specialist" && c.specialist_id === user.id && c.active && (
+                    {role === "specialist" && assignedToCase(c, user.id) && c.active && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -1155,7 +1088,7 @@ export function CasesCard({
                             date: next.scheduled_date,
                             time: next.scheduled_time,
                             durationMinutes: c.default_duration_minutes,
-                            specialistName: profilesMap[c.specialist_id] || null,
+                            specialistName: profilesMap[next.specialist_id] || null,
                             cost: c.default_cost,
                             discountPercentage: c.discount_percentage,
                             sessionKindLabel: KIND_LABEL[next.session_kind] || "جلسة",
@@ -1242,7 +1175,7 @@ export function CasesCard({
                     </div>
                     <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
                       <Label>أيام الجلسات ومواعيدها</Label>
-                      <CaseWeekdayEditor idPrefix={`edit-case-${editDraft.id}`} days={editDraft.recurring_days} times={editDraft.recurring_times} fallbackTime={editDraft.recurring_time} onChange={(nextDays, times) => setEditDraft({ ...editDraft, recurring_days: nextDays, recurring_times: times })} />
+                      <CaseWeekdayEditor idPrefix={`edit-case-${editDraft.id}`} sessions={caseSessions(editDraft)} specialists={specialists} defaultSpecialistId={editDraft.specialist_id} onChange={(sessions) => setEditDraft({ ...editDraft, ...scheduleFields(sessions) })} />
                     </div>
                     <div className="space-y-1.5">
                       <Label>المدة</Label>
@@ -1392,12 +1325,13 @@ export function CasesCard({
                                 <span dir="ltr"> · {fmtTime12(a.scheduled_time)}</span>
                               </span>
                               <span className="text-muted-foreground">— {KIND_LABEL[a.session_kind] || a.session_kind}</span>
+                              <span className="text-muted-foreground">— {profilesMap[a.specialist_id] || "—"}</span>
                               {a.status === "attended" && <span className="rounded bg-emerald-500/20 border border-emerald-500/50 text-emerald-900 px-1.5 py-0.5 font-semibold">حضرت</span>}
                               {(a.status === "apologized" || a.status === "cancelled") && <span className="rounded bg-orange-500/15 text-orange-700 px-1.5 py-0.5 font-semibold">معتذرة</span>}
                               {a.status === "absent" && <span className="rounded bg-red-500/15 text-red-700 px-1.5 py-0.5 font-semibold">غائبة</span>}
                             </span>
                             <span className="flex items-center gap-1 flex-wrap">
-                              {canManage && (
+                              {(canManage || a.specialist_id === user.id) && (
                                 <>
                                   <Button
                                     size="sm"
@@ -1433,7 +1367,7 @@ export function CasesCard({
                                   date: a.scheduled_date,
                                   time: a.scheduled_time,
                                   durationMinutes: c.default_duration_minutes,
-                                  specialistName: profilesMap[c.specialist_id],
+                                  specialistName: profilesMap[a.specialist_id],
                                   sessionKindLabel: a.session_kind !== "regular" ? KIND_LABEL[a.session_kind] : null,
                                 }));
                                 return link ? (
@@ -1475,10 +1409,13 @@ export function CasesCard({
           </DialogHeader>
           {logCase && (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                سيتم تسجيل جلسة بتاريخ اليوم وقت الآن، بسعر {Number(logCase.default_cost).toFixed(2)} ومدة {logCase.default_duration_minutes} دقيقة، للأخصائي{" "}
-                <b>{profilesMap[logCase.specialist_id] || "—"}</b>.
-              </p>
+              <div className="space-y-1.5">
+                <Label>جلسة اليوم</Label>
+                <Select value={logAppointmentId} onValueChange={setLogAppointmentId}>
+                  <SelectTrigger aria-label="جلسة اليوم"><SelectValue /></SelectTrigger>
+                  <SelectContent>{logAppointments.map((a) => <SelectItem key={a.id} value={a.id}>{fmtTime12(a.scheduled_time)} — {profilesMap[a.specialist_id] || "—"}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5">
                 <Label>ما تم خلال الجلسة (اختياري)</Label>
                 <Textarea
@@ -1508,9 +1445,7 @@ export function CasesCard({
         durationMinutes={duration}
         onPick={(s: Suggestion) => {
           setSpecialistId(s.specialistId);
-          const sameSpecialist = specialistId === s.specialistId;
-          setDays((previous) => sameSpecialist ? Array.from(new Set([...previous, s.dayOfWeek])).sort() : [s.dayOfWeek]);
-          setDayTimes((previous) => ({ ...(sameSpecialist ? previous : {}), [String(s.dayOfWeek)]: s.time }));
+          setNewSessions((previous) => [...previous.filter((row) => row.day !== s.dayOfWeek || row.time !== s.time), { day: s.dayOfWeek, time: s.time, specialist_id: s.specialistId }]);
           setShowForm(true);
           toast.success(`تم تعبئة النموذج بـ ${s.specialistName} — ${DAY_LABELS[s.dayOfWeek]} ${s.time}`);
         }}

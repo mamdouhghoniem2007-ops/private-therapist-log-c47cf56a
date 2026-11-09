@@ -183,6 +183,7 @@ export type Database = {
           notes: string | null
           payment_type: string
           recurring_days: number[]
+          recurring_sessions: Json | null
           recurring_time: string
           recurring_times: Json
           sessions_per_cycle: number
@@ -210,6 +211,7 @@ export type Database = {
           notes?: string | null
           payment_type?: string
           recurring_days?: number[]
+          recurring_sessions?: Json | null
           recurring_time: string
           recurring_times?: Json
           sessions_per_cycle?: number
@@ -237,6 +239,7 @@ export type Database = {
           notes?: string | null
           payment_type?: string
           recurring_days?: number[]
+          recurring_sessions?: Json | null
           recurring_time?: string
           recurring_times?: Json
           sessions_per_cycle?: number
